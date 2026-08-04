@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <title>Spring WebSocket + STOMP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin:16px; }
+        .row { display:flex; gap:8px; margin:8px 0; }
+        input, button { padding:8px; }
+        #log { border:1px solid #ccc; min-height:220px; padding:8px; white-space:pre-wrap; }
+        .badge { padding:2px 6px; border:1px solid #999; border-radius:8px; font-size:12px; }
+    </style>
+</head>
+<body>
+<h2>Demo: Spring Boot + WebSocket (STOMP)</h2>
+
+<div class="row">
+    <label>Nome:</label><input id="name" value="Matheus"/>
+    <label>Sala:</label><input id="room" value="geral"/>
+    <button onclick="connect()">Conectar</button>
+    <button onclick="disconnect()">Desconectar</button>
+    <span id="status" class="badge">offline</span>
+</div>
+
+<div class="row">
+    <input id="msg" placeholder="Escreva sua mensagem..." style="flex:1"/>
+    <button onclick="send()">Enviar</button>
+</div>
+
+<h3>Mensagens</h3>
+<div id="log"></div>
+
+<!-- libs (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+<script>
+    let stompClient = null;
+    let subscription = null;
+
+    function log(line){
+        const box = document.getElementById('log');
+        box.textContent += line + "\n";
+        box.scrollTop = box.scrollHeight;
+    }
+    function setStatus(on){
+        const s = document.getElementById('status');
+        s.textContent = on ? 'online' : 'offline';
+        s.style.color = on ? 'green' : 'red';
+    }
+
+    function connect(){
+        const socket = new SockJS('http://localhost:8080/ws');
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null; // silencioso
+        stompClient.connect({}, () => {
+            setStatus(true);
+            const room = document.getElementById('room').value || 'geral';
+            if (subscription) subscription.unsubscribe();
+            subscription = stompClient.subscribe(`/topic/chat/${room}`, (frame) => {
+                const m = JSON.parse(frame.body);
+                log(`[${m.sentAt}] ${m.from ?? 'anon'}: ${m.content}`);
+            });
+            log('✅ Conectado e inscrito em /topic/chat/' + room);
+        }, (err) => {
+            setStatus(false);
+            log('❌ Erro: ' + err);
+        });
+    }
+
+    function disconnect(){
+        if (stompClient) stompClient.disconnect(() => setStatus(false));
+    }
+
+    function send(){
+        if (!stompClient || !stompClient.connected) return log('⚠️ Não conectado.');
+        const room = document.getElementById('room').value || 'geral';
+        const from = document.getElementById('name').value || 'anon';
+        const content = document.getElementById('msg').value || '';
+        stompClient.send(`/app/chat.send/${room}`, {}, JSON.stringify({ from, content, type: "CHAT" }));
+        document.getElementById('msg').value = '';
+    }
+</script>
+</body>
+</html>

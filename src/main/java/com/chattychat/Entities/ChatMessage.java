@@ -4,30 +4,29 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Entity
-@Table(name = "ChatMessages")
+@Table(name = "Message")
 public class ChatMessage {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, unique = true)
-    private Long id;
+    private UUID id;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name="sender_id", referencedColumnName="id")
     private User sender;
+
+    @ManyToOne
+    @JoinColumn(name = "room_id", referencedColumnName = "id", nullable = false)
+    private Room room;
 
     @Column(name = "content", nullable = false)
     private String content;
 
-    @Column(name = "status", nullable = false)
-    private boolean status;
-
-    @Column(name = "created_at", nullable = false, unique = true)
-    private LocalDateTime createdAt;
-
-    @Column(name = "username", nullable = false)
-    private String username;
+    @Column(name = "sent_at", nullable = false, unique = true)
+    private LocalDateTime sentAt;
 
 }

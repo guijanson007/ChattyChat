@@ -1,5 +1,6 @@
 package com.chattychat.Entities;
 
+import com.chattychat.dto.UserDTO;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,5 +21,9 @@ public class User {
 
     @Column(name = "name", nullable = false)
     private String name;
+
+    public UserDTO toDTO() {
+        return new UserDTO(id, name);
+    }
 
 }

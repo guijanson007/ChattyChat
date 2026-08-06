@@ -2,31 +2,40 @@ package com.chattychat.Entities;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Getter
 @Entity
-@Table(name = "Message")
+@Table(name = "messages")
+@Getter
+@Setter
+@NoArgsConstructor
 public class ChatMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, unique = true)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name="sender_id", referencedColumnName="id")
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    @ManyToOne
-    @JoinColumn(name = "room_id", referencedColumnName = "id", nullable = false)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
-    @Column(name = "content", nullable = false)
+    @Column(nullable = false, length = 1000)
     private String content;
 
-    @Column(name = "sent_at", nullable = false, unique = true)
+    @Column(name = "sent_at", nullable = false)   // no unique
     private LocalDateTime sentAt;
 
+    public ChatMessage(User sender, Room room, String content, LocalDateTime sentAt) {
+        this.sender = sender;
+        this.room = room;
+        this.content = content;
+        this.sentAt = sentAt;
+    }
 }

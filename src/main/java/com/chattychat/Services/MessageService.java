@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class MessageService {
@@ -27,9 +28,9 @@ public class MessageService {
         this.roomRepository = roomRepository;
     }
 
-    public OutboundMessageDTO save(String roomName, InboundMessageDTO incoming) {
-        User sender = userRepository.findById(incoming.senderId())
-                .orElseThrow(() -> new IllegalArgumentException("Unknown user id: " + incoming.senderId()));
+    public OutboundMessageDTO save(String roomName, UUID senderId, InboundMessageDTO incoming) {
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown user id: " + senderId));
         Room room = roomRepository.findByName(roomName)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown room: " + roomName));
 
@@ -37,17 +38,31 @@ public class MessageService {
                 new ChatMessage(sender, room, incoming.content(), LocalDateTime.now())
         );
 
-        return new OutboundMessageDTO(saved.getId(), sender.getId(), sender.getFirstName(),
-                room.getName(), saved.getContent(), saved.getSentAt());
+        String fromName = sender.getDisplayName() != null ? sender.getDisplayName() : sender.getFirstName();
+
+        return new OutboundMessageDTO(
+                saved.getId(),
+                sender.getId(),
+                fromName,
+                saved.getContent(),
+                saved.getSentAt()
+        );
     }
 
     public List<OutboundMessageDTO> history(String roomName) {
         return messageRepository.findByRoomNameOrderBySentAtAsc(roomName)
                 .stream()
-                .map(m -> new OutboundMessageDTO(
-                        m.getId(), m.getSender().getId(),
-                        m.getSender().getFirstName(), m.getRoom().getName(),
-                        m.getContent(), m.getSentAt()))
+                .map(m -> {
+                    User sender = m.getSender();
+                    String fromName = sender.getDisplayName() != null ? sender.getDisplayName() : sender.getFirstName();
+                    return new OutboundMessageDTO(
+                            m.getId(),
+                            sender.getId(),
+                            fromName,
+                            m.getContent(),
+                            m.getSentAt()
+                    );
+                })
                 .toList();
     }
 }

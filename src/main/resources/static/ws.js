@@ -15,17 +15,24 @@ export function connect() {
     }
 }
 
-function onConnected() {
-    state.connected = true;
-    setStatus('online', 'online');
-    subscribeToRoom(state.room);
-}
-
 function onConnectError(err) {
     state.connected = false;
     state.subscription = null;
     setStatus('error', 'offline');
     renderNotice('Não foi possível conectar ao servidor. Verifique se o backend está rodando e tente novamente.', 'error');
+}
+
+function onConnected() {
+    state.connected = true;
+    setStatus('online', 'online');
+
+    // Subscribe to user-specific errors ONCE upon connection
+    state.client.subscribe('/user/queue/errors', function (frame) {
+        var err = JSON.parse(frame.body);
+        renderNotice('Erro: ' + err.error, 'error');
+    });
+
+    subscribeToRoom(state.room);
 }
 
 export function subscribeToRoom(room) {
@@ -37,6 +44,7 @@ export function subscribeToRoom(room) {
         }
         state.subscription = null;
     }
+    // Only manage the room-specific topic subscription here
     state.subscription = state.client.subscribe(TOPIC(room), onFrame);
     renderNotice('Você entrou em #' + room);
 }
@@ -85,7 +93,6 @@ export function sendMessage(content) {
         return false;
     }
     state.client.send(DEST(state.room), {}, JSON.stringify({
-        senderId: state.user.id,
         content: content
     }));
     return true;

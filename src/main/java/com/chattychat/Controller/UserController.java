@@ -46,13 +46,30 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        System.out.println(userDTO.toString());
-
         return ResponseEntity.ok(userDTO);
     }
 
     @PatchMapping("/{userId}")
-    public ResponseEntity<UserDTO> updateUserDisplayName(@PathVariable UUID userId, @RequestBody UpdateNameRequestDTO request) {
+    public ResponseEntity<UserDTO> updateUserDisplayName(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable UUID userId,
+            @RequestBody UpdateNameRequestDTO request) {
+
+        if (authUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        if (request == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        if (!userId.equals(authUser.getProviderId()))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+
         UserDTO updatedUser = userService.updateUserDisplayName(userId, request.displayName());
         return ResponseEntity.ok(updatedUser);
     }

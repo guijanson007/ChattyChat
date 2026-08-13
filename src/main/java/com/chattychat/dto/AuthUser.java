@@ -9,7 +9,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
-public record AuthUser(UUID userId, String provider, String providerId, String name, Map<String, Object> attributes) implements OAuth2User, Serializable {
+public record AuthUser(UUID userId, String provider, String providerId, String name,
+                       Map<String, Object> attributes) implements OAuth2User, Serializable {
 
     @Override
     public Map<String, Object> getAttributes() {
@@ -23,7 +24,7 @@ public record AuthUser(UUID userId, String provider, String providerId, String n
 
     @Override
     public String getName() {
-        return name != null ? name : userId.toString();
+        return userId.toString();
     }
 
     public UUID getUserId() {

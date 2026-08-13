@@ -3,12 +3,13 @@ package com.chattychat.dto;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
-public record AuthUser(UUID userId, Map<String, Object> attributes) implements OAuth2User {
+public record AuthUser(UUID userId, String provider, String providerId, String name, Map<String, Object> attributes) implements OAuth2User, Serializable {
 
     @Override
     public Map<String, Object> getAttributes() {
@@ -17,12 +18,12 @@ public record AuthUser(UUID userId, Map<String, Object> attributes) implements O
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // NO roles for now
+        return Collections.emptyList();
     }
 
     @Override
     public String getName() {
-        return attributes.get("given_name").toString();
+        return name != null ? name : userId.toString();
     }
 
     public UUID getUserId() {
@@ -30,10 +31,10 @@ public record AuthUser(UUID userId, Map<String, Object> attributes) implements O
     }
 
     public String getProvider() {
-        return (String) attributes.get("provider");
+        return provider;
     }
 
     public String getProviderId() {
-        return (String) attributes.get("sub");
+        return providerId;
     }
 }

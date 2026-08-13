@@ -9,6 +9,8 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+
 @Service
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
@@ -25,17 +27,24 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String provider = userRequest.getClientRegistration().getRegistrationId();
         String providerId = oAuth2User.getAttribute("sub");
 
+        String firstName = oAuth2User.getAttribute("given_name");
+        String lastName = oAuth2User.getAttribute("family_name");
+        String email = oAuth2User.getAttribute("email");
+
+        String resolvedName = firstName != null ? firstName : (oAuth2User.getAttribute("name") != null ? oAuth2User.getAttribute("name") : "Unknown");
+
         User user = userRepository.findByProviderAndProviderId(provider, providerId)
                 .orElseGet(() -> {
                     User newUser = new User();
                     newUser.setProvider(provider);
                     newUser.setProviderId(providerId);
-                    newUser.setFirstName(oAuth2User.getAttribute("given_name"));
-                    newUser.setLastName(oAuth2User.getAttribute("family_name"));
-                    newUser.setEmail(oAuth2User.getAttribute("email"));
+                    newUser.setFirstName(firstName != null ? firstName : "Unknown");
+                    newUser.setLastName(lastName != null ? lastName : "");
+                    newUser.setEmail(email);
                     return userRepository.save(newUser);
                 });
 
-        return new AuthUser(user.getId(), oAuth2User.getAttributes());
+        // Pass clean primitives instead of the raw, non-serializable attribute map blocks
+        return new AuthUser(user.getId(), provider, providerId, resolvedName, Collections.emptyMap());
     }
 }

@@ -2,6 +2,7 @@ package com.chattychat.Controller;
 
 import com.chattychat.Services.UserService;
 import com.chattychat.dto.AuthUser;
+import com.chattychat.dto.UpdateNameRequestDTO;
 import com.chattychat.dto.UserDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,12 +46,14 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        System.out.println(userDTO.toString());
+
         return ResponseEntity.ok(userDTO);
     }
 
     @PatchMapping("/{userId}")
-    public ResponseEntity<UserDTO> updateUserDisplayName(@PathVariable UUID userId, @RequestBody String newDisplayName) {
-        UserDTO updatedUser = userService.updateUserDisplayName(userId, newDisplayName);
+    public ResponseEntity<UserDTO> updateUserDisplayName(@PathVariable UUID userId, @RequestBody UpdateNameRequestDTO request) {
+        UserDTO updatedUser = userService.updateUserDisplayName(userId, request.displayName());
         return ResponseEntity.ok(updatedUser);
     }
 

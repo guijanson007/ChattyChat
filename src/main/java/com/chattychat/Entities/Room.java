@@ -28,7 +28,26 @@ public class Room {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "last_updated_at")
+    private LocalDateTime lastUpdatedAt;
+
     public RoomDTO toDTO() {
         return new RoomDTO(id, name, createdAt);
+    }
+
+    public Room(UUID id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDateTime.now();
+        lastUpdatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        lastUpdatedAt = LocalDateTime.now();
     }
 }

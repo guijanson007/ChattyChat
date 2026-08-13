@@ -5,7 +5,6 @@ import com.chattychat.Repositories.RoomRepository;
 import com.chattychat.dto.RoomDTO;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +24,6 @@ public class RoomService {
     }
 
     public RoomDTO createRoom(RoomDTO room) {
-        return roomRepository.save(new Room(room.id(), room.name(), LocalDateTime.now())).toDTO();
+        return roomRepository.save(new Room(room.id(), room.name())).toDTO();
     }
 }

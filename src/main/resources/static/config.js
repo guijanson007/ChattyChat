@@ -1,5 +1,6 @@
 export const API_BASE = 'http://localhost:8080';
 export const API = {
+    me: API_BASE + '/v1/users/me',
     users: API_BASE + '/v1/users',
     rooms: API_BASE + '/v1/rooms'
 };

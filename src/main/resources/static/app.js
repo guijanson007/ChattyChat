@@ -1,9 +1,9 @@
-import { API, API_BASE } from './config.js';
-import { state, el, $ } from './state.js';
-import { apiFetch, normalizeRooms } from './api.js';
-import { connect, disconnect, subscribeToRoom, sendMessage } from './ws.js';
-import { showScreen, setHint, renderRoomList, renderMessage, renderNotice } from './ui.js';
-import { loadName, saveName, loadUserId, saveUserId, initials, sanitizeRoom, formatSentAt } from './utils.js';
+import {API, API_BASE} from './config.js';
+import {$, el, state} from './state.js';
+import {apiFetch, normalizeRooms} from './api.js';
+import {connect, disconnect, sendMessage, subscribeToRoom} from './ws.js';
+import {renderMessage, renderNotice, renderRoomList, setHint, showScreen} from './ui.js';
+import {formatSentAt, initials, loadName, sanitizeRoom} from './utils.js';
 
 function showLoginScreen() {
     showScreen('screen-login');
@@ -29,25 +29,28 @@ function validateName() {
 
 function submitName(e) {
     e.preventDefault();
-    if (!validateName()) { el['input-name'].focus(); return; }
-    var name = el['input-name'].value.trim();
+    if (!validateName()) {
+        el['input-name'].focus();
+        return;
+    }
+    var newDisplayName = el['input-name'].value.trim();
 
     el['btn-name'].disabled = true;
     el['btn-name'].textContent = 'Enviando…';
     setHint(el['hint-name'], '');
 
-    apiFetch(API.users, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name })
-    }).then(function (user) {
-        state.username = name;
-        if (user && user.id) { state.userId = user.id; saveUserId(user.id); }
-        saveName(name);
+    // Assuming you use PATCH for partial updates.
+    // If your backend strictly requires PUT, change the method to 'PUT'.
+    apiFetch(API.users(state.user.id), {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({displayName: newDisplayName})
+    }).then(function (updatedUser) {
+        state.user = updatedUser; // Update state with the returned DTO
         el['btn-name'].textContent = 'Continuar';
         showRoomSelection();
     }).catch(function (err) {
-        setHint(el['hint-name'], 'Não foi possível salvar seu nome: ' + err.message);
+        setHint(el['hint-name'], 'Não foi possível atualizar o nome: ' + err.message);
         el['btn-name'].disabled = false;
         el['btn-name'].textContent = 'Continuar';
     });
@@ -55,8 +58,13 @@ function submitName(e) {
 
 function showRoomSelection() {
     disconnect();
-    el['who-name'].textContent = state.username;
-    el.avatar.textContent = initials(state.username);
+
+    // Fallback to firstName if displayName is null
+    const display = state.user.displayName || state.user.firstName;
+
+    el['who-name'].textContent = display;
+    el.avatar.textContent = initials(display);
+
     showScreen('screen-rooms');
     el['input-room'].value = '';
     setHint(el['hint-room'], '');
@@ -74,7 +82,7 @@ function loadRoomsFromServer() {
     loading.textContent = 'Carregando salas…';
     list.appendChild(loading);
 
-    apiFetch(API.rooms, { method: 'GET' })
+    apiFetch(API.rooms, {method: 'GET'})
         .then(function (rooms) {
             state.rooms = normalizeRooms(rooms);
             renderRoomList(joinRoom);
@@ -89,7 +97,10 @@ function loadRoomsFromServer() {
 function submitRoom(e) {
     e.preventDefault();
     var room = sanitizeRoom(el['input-room'].value);
-    if (!room) { setHint(el['hint-room'], 'Informe um nome de sala válido.'); return; }
+    if (!room) {
+        setHint(el['hint-room'], 'Informe um nome de sala válido.');
+        return;
+    }
     setHint(el['hint-room'], '');
 
     var btn = el['form-room'].querySelector('button[type="submit"]');
@@ -97,10 +108,10 @@ function submitRoom(e) {
 
     apiFetch(API.rooms, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: room })
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: room})
     }).then(function () {
-        return apiFetch(API.rooms, { method: 'GET' });
+        return apiFetch(API.rooms, {method: 'GET'});
     }).then(function (rooms) {
         state.rooms = normalizeRooms(rooms);
         if (btn) btn.disabled = false;
@@ -122,7 +133,7 @@ function joinRoom(room) {
 }
 
 function loadHistory(room) {
-    apiFetch(API_BASE + '/v1/rooms/' + encodeURIComponent(room) + '/messages', { method: 'GET' })
+    apiFetch(API_BASE + '/v1/rooms/' + encodeURIComponent(room) + '/messages', {method: 'GET'})
         .then(function (msgs) {
             if (state.room !== room) return;
             (msgs || []).forEach(function (m) {
@@ -161,7 +172,9 @@ function cacheEls() {
         'btn-name', 'avatar', 'who-name', 'btn-change-name', 'room-list', 'rooms-empty',
         'form-room', 'input-room', 'hint-room', 'btn-back', 'chat-title', 'chat-meta',
         'status', 'status-text', 'messages', 'form-msg', 'input-msg', 'btn-send']
-        .forEach(function (id) { el[id] = $(id); });
+        .forEach(function (id) {
+            el[id] = $(id);
+        });
 }
 
 function bindEvents() {
@@ -177,10 +190,27 @@ function bindEvents() {
 function initializeApp() {
     cacheEls();
     bindEvents();
-    state.username = loadName();
-    state.userId = loadUserId();
-    if (state.username && state.userId) showRoomSelection();
-    else showLoginScreen();
+
+    // Fetch user session on boot
+    apiFetch(API.me, {method: 'GET'})
+        .then(function (userDTO) {
+            if (!userDTO || !userDTO.id) {
+                throw new Error("Invalid session data");
+            }
+            state.user = userDTO;
+
+            // If they don't have a display name yet, force them to the naming screen
+            if (!state.user.displayName) {
+                showUsernameScreen();
+            } else {
+                showRoomSelection();
+            }
+        })
+        .catch(function (err) {
+            console.error("Session verification failed:", err);
+            // Handle unauthenticated state here (e.g., redirect to OAuth2 login)
+            showLoginScreen();
+        });
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);

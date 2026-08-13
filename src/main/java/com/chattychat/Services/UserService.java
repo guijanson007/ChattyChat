@@ -37,4 +37,14 @@ public class UserService {
                 .orElse(null);
     }
 
+    public UserDTO updateUserDisplayName(UUID userId, String newDisplayName) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return null;
+        }
+        user.setDisplayName(newDisplayName);
+        userRepository.save(user);
+        return user.toDTO();
+    }
+
 }

@@ -33,7 +33,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     newUser.setFirstName(oAuth2User.getAttribute("given_name"));
                     newUser.setLastName(oAuth2User.getAttribute("family_name"));
                     newUser.setEmail(oAuth2User.getAttribute("email"));
-                    newUser.setDisplayName(oAuth2User.getAttribute("given_name"));
                     return userRepository.save(newUser);
                 });
 

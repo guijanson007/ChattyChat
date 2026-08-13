@@ -1,6 +1,5 @@
 export const state = {
-    username: '',
-    userId: null,
+    user: null, // Will hold the UserDTO: { id, firstName, lastName, email, displayName }
     room: null,
     rooms: [],
     client: null,

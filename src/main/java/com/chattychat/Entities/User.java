@@ -42,8 +42,11 @@ public class User {
     @Column(name = "email", nullable = true)
     private String email;
 
+    @Column(name = "display_name")
+    private String displayName;
+
     public UserDTO toDTO() {
-        return new UserDTO(id, firstName, lastName, email);
+        return new UserDTO(id, firstName, lastName, email, displayName);
     }
 
 }

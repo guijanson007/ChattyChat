@@ -39,14 +39,12 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // Return the attributes or map them to a specific response DTO
-        UserDTO userResponse = new UserDTO(
-                authUser.getUserId(),
-                (String) authUser.getAttributes().get("given_name"),
-                (String) authUser.getAttributes().get("family_name"),
-                (String) authUser.getAttributes().get("email")
+        UserDTO userDTO = userService.getUserByProviderAndProviderId(
+                authUser.getProvider(),
+                authUser.getProviderId()
         );
-        return ResponseEntity.ok(userResponse);
+
+        return ResponseEntity.ok(userDTO);
     }
 
 

@@ -30,5 +30,11 @@ public class UserService {
                 .map(User::toDTO)
                 .orElse(null);
     }
-    
+
+    public UserDTO getUserByProviderAndProviderId(String provider, String providerId) {
+        return userRepository.findByProviderAndProviderId(provider, providerId)
+                .map(User::toDTO)
+                .orElse(null);
+    }
+
 }

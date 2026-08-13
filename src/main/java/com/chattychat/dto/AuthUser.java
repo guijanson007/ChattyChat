@@ -28,4 +28,12 @@ public record AuthUser(UUID userId, Map<String, Object> attributes) implements O
     public UUID getUserId() {
         return userId;
     }
+
+    public String getProvider() {
+        return (String) attributes.get("provider");
+    }
+
+    public String getProviderId() {
+        return (String) attributes.get("sub");
+    }
 }

@@ -67,7 +67,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        if (!userId.equals(authUser.getProviderId()))
+        if (!userId.equals(authUser.getUserId()))
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 
         UserDTO updatedUser = userService.updateUserDisplayName(userId, request.displayName());

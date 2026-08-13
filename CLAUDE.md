@@ -1,8 +1,10 @@
 # CLAUDE.md — ChattyChat
 
-Context for continuing this project in Claude Code. Rewritten 2026-08-13 from a full read of the current tree
-(backend + frontend). **Where it says "verify", check the actual code before trusting it** — this file drifts from
-the code the moment someone edits without updating it.
+Context for continuing this project in Claude Code. Rewritten 2026-08-13 (second pass) from a full read of the
+current tree (backend + frontend), after the "added security layers" commit. **Where it says "verify", check the
+actual code before trusting it** — this file drifts from the code the moment someone edits without updating it. The
+first pass of this rewrite (same day) was itself based on a stale partial re-read and missed real changes — don't
+trust a "re-read" that only re-reads the files that seem relevant; re-read the whole tree.
 
 ---
 
@@ -15,8 +17,12 @@ are persisted to Postgres and loaded as history when a user enters a room.
 Purpose is **learning**, with a stretch goal of possibly running it as a small friends-and-family tool. It is **not
 production-ready** (see "Known gaps").
 
-Auth status: **Google OAuth2 login works end-to-end** (session created, `User` row provisioned, CSRF cookie issued).
-**GitHub OAuth2 is broken, not just unfinished** — see "Known gaps" #1, it's a concrete bug, not a TODO.
+Auth status: **Google OAuth2 authentication itself works** (session created, `User` row provisioned, CSRF cookie
+issued, `/v1/users/me` resolves correctly). **But first-time onboarding is currently broken**: any brand-new Google
+user gets sent to the display-name screen (`displayName == null`), and the `PATCH /v1/users/{id}` call that screen
+makes always returns 403 — see Known gaps #1. Nobody who hasn't already got a `displayName` set in the DB some other
+way can currently reach the rooms screen. **GitHub OAuth2 is still broken** — see Known gaps #2, unchanged since
+last review.
 
 ---
 
@@ -30,7 +36,10 @@ Auth status: **Google OAuth2 login works end-to-end** (session created, `User` r
   `CsrfTokenRequestAttributeHandler`) so the frontend JS can read the `XSRF-TOKEN` cookie and echo it back as
   `X-XSRF-TOKEN` on state-changing requests. A `CsrfCookieFilter` forces the deferred token to actually render into
   the cookie on every request.
-- Messaging: STOMP over SockJS, in-memory `SimpleBroker`.
+- `spring.config.import=file:.env[.properties]` — **no longer `optional:`** (it was before). The app now hard-fails
+  to boot if `.env` is missing, instead of silently running without secrets. Operational note, not a bug.
+- Messaging: STOMP over SockJS, in-memory `SimpleBroker`. `WebSocketConfig`'s STOMP endpoint now only allows origin
+  `http://localhost:8080` — the earlier `setAllowedOriginPatterns("*")` wildcard is gone.
 - Frontend: plain JS, no build step, but **now split into ES modules** loaded via `<script type="module" src="app.js">`
   (not a single IIFE anymore): `config.js`, `state.js`, `api.js`, `ws.js`, `ui.js`, `utils.js`, `app.js` (entry point),
   plus `index.html` / `styles.css`. SockJS + stomp.js from CDN.
@@ -46,17 +55,23 @@ Backend package root `com.chattychat`, layered controller → service → reposi
     - `SecurityConfig` — CSRF, authorization rules, `oauth2Login` wiring, custom success handler
     - `WebSocketConfig` — STOMP/SockJS registration
 - `com.chattychat.Controller`
-    - `UserController` — REST, `/v1/users` (list, get-by-id, `/me`, PATCH display name)
+    - `UserController` — REST, `/v1/users` (list, get-by-id, `/me`, PATCH display name — **PATCH is currently
+      broken, see Known gaps #1**)
     - `RoomController` — REST, `/v1/rooms` (list, create)
-    - `MessageWSController` — STOMP `@Controller`, `@MessageMapping` only
+    - `MessageWSController` — STOMP `@Controller`. Now has both `@MessageMapping` (resolves sender from the STOMP
+      `Principal`, not the payload — see Auth model) and a `@MessageExceptionHandler` that routes failures to the
+      sender's private `/user/queue/errors` queue.
     - `MessageRestController` — REST `@RestController`, `/v1/rooms/{room}/messages` history endpoint
 - `com.chattychat.Services` — `UserService`, `RoomService`, `MessageService`, `CustomOAuth2UserService`
 - `com.chattychat.Repositories` — `UserRepository`, `RoomRepository`, `MessageRepository`
 - `com.chattychat.Entities` — `User`, `Room`, `ChatMessage`, `RoomMember` + `RoomMemberId` (composite-key embeddable;
   **`RoomMember` is currently unused** — no repository, service, or controller references it. Looks like scaffolding
-  for a future "room membership" feature; safe to ignore until something actually wires it up)
-- `com.chattychat.dto` — `InboundMessageDTO`, `OutboundMessageDTO`, `UserDTO`, `RoomDTO`, `UpdateNameRequestDTO`,
-  `AuthUser` (the OAuth2 principal type, see Auth section)
+  for a future "room membership" feature; safe to ignore until something actually wires it up. `User`'s PK is `UUID`
+  again, matching `RoomMemberId.userId`'s type, so the `@MapsId` type-mismatch risk noted in Gotchas is currently
+  dormant, not active)
+- `com.chattychat.dto` — `InboundMessageDTO` (now just `{content}`, see Auth model), `OutboundMessageDTO` (dropped
+  the `room` field), `UserDTO`, `RoomDTO`, `UpdateNameRequestDTO`, `ErrorDTO` (new — `{error}`, payload for
+  `/user/queue/errors`), `AuthUser` (the OAuth2 principal type, see Auth section)
 
 Note the package names are capitalized (`Controller`, `Services`, `Entities`, `Config`) — unusual for Java convention
 (normally lowercase), but that's the existing choice; stay consistent.
@@ -119,13 +134,36 @@ claim names — Google has them because Google speaks OIDC. GitHub does **not** 
 itself be null). Logging in via GitHub right now means `providerId` resolves to `null`, and since `User.provider_id`
 is `nullable = false`, the insert fails. This needs the same `registrationId`-branching fix discussed earlier — read
 `"id"` (cast to `String`) for GitHub, `"sub"` for Google — before GitHub can work at all, not just before it's
-"complete."
+"complete." Nothing about this changed in the "added security layers" commit — still exactly as broken as before.
 
-**Chat/STOMP is still on the old trust model.** `InboundMessageDTO` still carries a client-supplied `senderId`
-(now typed `UUID` instead of the old raw string) that `MessageService.save()` trusts via `findById`. None of the
-OAuth2 work above has reached `MessageWSController` yet — the STOMP session *does* carry the authenticated
-`Principal` (Spring's WebSocket support propagates it automatically from the HTTP handshake), but nothing reads it.
-See Known gaps #3 — this is the actual security-relevant gap left over from the OAuth2 work.
+**New risk: Google's requested scope was narrowed and might no longer request what `CustomOAuth2UserService` needs.**
+`application.properties` now sets `spring.security.oauth2.client.registration.google.scope=profile,email` —
+`openid` is not in that list. Google's userinfo endpoint (`https://www.googleapis.com/oauth2/v3/userinfo`, which is
+what `CommonOAuth2Provider.GOOGLE` points at) is the OIDC userinfo endpoint and typically requires the `openid`
+scope to have been granted. `CustomOAuth2UserService` still resolves `providerId` from the OIDC-only `sub` claim.
+**I have not run a live login to confirm this actually fails** — I don't have credentials or a running instance —
+but the dependency is real: if the userinfo call now comes back without `sub` because `openid` wasn't granted, new
+Google logins would fail to provision a `User` row the same way GitHub logins do. Re-test this live before trusting
+it, or just add `openid` back to the scope list since nothing here needs it removed.
+
+**Chat/STOMP identity resolution — FIXED since last review.** `InboundMessageDTO` is now just `{content}` — no more
+client-supplied `senderId`. `MessageWSController.sendToRoom` takes a `Principal` parameter, casts it to
+`Authentication`, pulls the `AuthUser` off `getPrincipal()`, and passes `user.getUserId()` into
+`MessageService.save()` explicitly. This is the fix the previous version of this doc was waiting on (old gap #3) —
+it landed. The manual `(Authentication) principal` cast works because `/ws/**` requires HTTP-level authentication
+and Spring Security's request principal is always the `Authentication` object, but it's an implicit assumption
+baked into an unchecked cast rather than using `@AuthenticationPrincipal AuthUser` (as `UserController` already
+does) — would throw `ClassCastException` instead of failing gracefully if that assumption ever stopped holding.
+Minor robustness note, not urgent.
+
+**Error feedback — FIXED since last review.** `MessageWSController` now has a `@MessageExceptionHandler` that
+catches any exception from `sendToRoom` (unknown room, unknown user, etc.) and sends an `ErrorDTO` to the sender's
+private `/user/queue/errors` destination via `SimpMessagingTemplate.convertAndSendToUser`. The frontend already
+subscribes to this in `ws.js` (`onConnected`) and renders it as a notice. `AuthUser.getName()` was changed to
+*always* return `userId.toString()` (previously fell back to a human display name) — this is the right call, since
+`convertAndSendToUser` routes by `Principal.getName()`, and a human name isn't guaranteed unique, so it could
+misroute error frames between two users who happen to share a name. Keep it this way; don't revert to a display
+name for `getName()`.
 
 ---
 
@@ -137,20 +175,30 @@ REST:
 - `GET  /v1/users/{userId}` → `UserDTO` by surrogate UUID.
 - `GET  /v1/users/me` → current session's `UserDTO`, 401 if not authenticated or if the `AuthUser` can't be
   re-resolved to a `User` row.
-- `PATCH /v1/users/{userId}` body `{ "displayName": "..." }` → updates and returns the `UserDTO`. **Not currently
-  scoped to "your own user"** — any authenticated caller can PATCH any `userId` they can guess (see Known gaps).
+- `PATCH /v1/users/{userId}` body `{ "displayName": "..." }` → **currently broken, always returns 403.** A
+  self-scoping check was added (attempting to fix the old "not scoped to your own user" gap) but it compares the
+  wrong types: `!userId.equals(authUser.getProviderId())` compares a `UUID` (the path variable) against a `String`
+  (the provider's raw id, e.g. Google's `sub`). `UUID.equals()` returns `false` for any non-`UUID` argument by
+  contract, so this condition is unconditionally `true` and the endpoint 403s every request, including the
+  rightful owner's. **This breaks the entire first-login onboarding flow** — see Known gaps #1. Fix: compare
+  against `authUser.getUserId()` (also a `UUID`), not `getProviderId()`.
 - `GET  /v1/rooms` → array of rooms (`{id,name}` or `["name"]`; frontend normalizes).
 - `POST /v1/rooms` body `{ "name": "..." }` → created room.
 - `GET  /v1/rooms/{room}/messages` → `OutboundMessageDTO[]`, oldest-first (history).
 
 STOMP:
 
-- Connect endpoint: `/ws` (SockJS).
+- Connect endpoint: `/ws` (SockJS, origin locked to `http://localhost:8080`).
 - App prefix `/app`; send destination `/app/chat.send/{room}`.
-- Topic (broadcast): `/topic/chat/{room}`.
-- Inbound payload from client: `{ senderId: <UUID>, content: "..." }` — **still client-supplied, see Auth model above.**
-- `OutboundMessageDTO` carries: `id`, `senderId`, `from` (sender's `firstName`, not `displayName` — see gotcha),
-  `room` (name), `content`, `sentAt`.
+- Topic (broadcast, public): `/topic/chat/{room}`.
+- Private per-user queue (new): `/user/queue/errors` — carries `ErrorDTO { error }` when a send fails server-side.
+- Inbound payload from client: `{ content: "..." }` **only** — no more `senderId`. The sender is resolved
+  server-side from the authenticated STOMP `Principal` (see Auth model above — this is fixed now).
+- `OutboundMessageDTO` carries: `id`, `senderId`, `from` (sender's `displayName`, falling back to `firstName` — the
+  old gotcha about it using `firstName` unconditionally is gone), `content`, `sentAt`. **The `room` field was
+  dropped** — if any frontend code still reads `m.room` off an inbound frame, it'll always be `undefined` now
+  (checked: nothing in the current frontend reads it, but flag this if a future change adds room-name display in
+  the message list).
 
 Authorization rule in `SecurityConfig`: only `/v1/**` and `/ws/**` require authentication; everything else
 (`anyRequest().permitAll()`) is open by default. Inverted from "deny unless listed" — fine at this size, but revisit
@@ -177,10 +225,9 @@ before adding more routes.
 - **Identity resolution moved from localStorage to a server round-trip.** `app.js` no longer trusts any locally
   cached user id; `initializeApp()` always calls `GET /v1/users/me` first and branches on the response. This is a
   real improvement over the old honor-system localStorage model — keep it this way.
-- **Send `senderId` (UUID), not the display name — but this decision now needs revisiting.** It made sense when
-  identity was entirely client-asserted. Now that the server can resolve identity from the session, the STOMP path
-  keeping a client-supplied `senderId` is the one place the old trust model survived the OAuth2 migration. See
-  Known gaps #3.
+- **Sender identity is now resolved server-side on the STOMP path too.** This was the last piece of the old
+  client-asserted-identity model and it's now fixed — `MessageWSController` pulls the sender off the authenticated
+  `Principal`, not the message body. Don't regress this by adding a `senderId` back to `InboundMessageDTO`.
 - **Room `name` IS unique; user identity uniqueness is `(provider, providerId)`, not name.** Room uniqueness is
   required because STOMP topics route by room name (`/topic/chat/{room}`) and `RoomRepository` looks rooms up by
   name.
@@ -229,6 +276,16 @@ before adding more routes.
 - **Frontend module boot order.** `app.js` is now `type="module"`, loaded after the SockJS/stomp.js CDN `<script>`
   tags in `index.html`. All DOM-touching code still needs `cacheEls()` to have run first inside `initializeApp()`
   (unchanged rule from the IIFE days, just now inside a module instead of a top-level function).
+- **`UUID.equals(Object)` silently returns `false` for any non-`UUID` argument — it's not a compile error, so the
+  bug hides in plain sight.** This is exactly what broke `PATCH /v1/users/{userId}` (see Known gaps #1): comparing
+  a `UUID` path variable against a `String` provider id compiles fine and just always evaluates to "not equal."
+  Any future ownership/self check must compare same-typed identifiers — `authUser.getUserId()` (`UUID`) against the
+  path/body `UUID`, never against `getProviderId()` (`String`).
+- **Narrowing an OAuth2 `scope` list can silently change which claims come back, even if the login still
+  "succeeds."** Dropping `openid` from Google's scope (see Auth model) doesn't necessarily break the redirect/login
+  UX — it can just make the OIDC-only `sub` claim disappear from the userinfo response, which only shows up later
+  as a `provider_id NOT NULL` failure when provisioning the user. If you ever change a registration's `scope`,
+  re-test the full login → provisioning path live, not just "does it redirect and come back."
 
 ---
 
@@ -242,91 +299,107 @@ before adding more routes.
   keys are still defined here but appear unused now, verify before deleting), `state.js` (shared mutable `state`/`el`
   objects), `api.js` (`apiFetch` with CSRF-cookie handling, `normalizeRooms`), `ws.js` (STOMP connect/send/subscribe),
   `ui.js` (DOM rendering), `utils.js` (formatting helpers), `app.js` (screen flow + event wiring, the entry point).
-- **`ui.js`'s `renderMessage` still reads `state.userId`/`state.username`**, which no longer exist on `state` (state
-  now has `state.user.id` etc, per `state.js`). This looks like a leftover from before the `state.user` refactor —
-  "mine" message detection is likely broken or silently falling through to the name-comparison fallback. Worth
-  checking directly in a browser before relying on it.
-- **Display name flow:** `screen-login` → (if `displayName` is null) `screen-name`, which does `PATCH
-  /v1/users/{state.user.id}` → `screen-rooms`. The old `POST /v1/users` create-a-user flow is gone entirely; there's
-  no more "create user" REST call from the frontend, since `CustomOAuth2UserService` provisions the row server-side
-  on first login.
+- **`ui.js`'s `renderMessage` still reads `state.userId`/`state.username`**, which don't exist on `state` (state has
+  `state.user.id` etc, per `state.js`) — **still unfixed, confirmed unchanged this pass** (no frontend file has been
+  touched since the last review; `git status` shows the static assets untracked-clean). "Mine" message detection is
+  currently always falling through to the `msg.from === state.username` branch, which compares against `undefined`
+  and will never match — every message, including your own, is rendered as "not mine" right now. Worth confirming
+  in a live browser, but the code reads unambiguously broken.
+- **Display name flow — currently a dead end.** `screen-login` → (if `displayName` is null) `screen-name`, which
+  does `PATCH /v1/users/{state.user.id}` → `screen-rooms`. That PATCH now always 403s (see Known gaps #1), so any
+  first-time user who reaches `screen-name` cannot get past it — `submitName()`'s error path fires every time. The
+  old `POST /v1/users` create-a-user flow is gone entirely; `CustomOAuth2UserService` provisions the row
+  server-side on first login, which still works — it's only the *display name* step that's stuck.
+- **`ws.js`'s `sendMessage` sends `{content}` only now** — matches the backend's `InboundMessageDTO`. Already
+  updated, no action needed.
+- **`ws.js` already subscribes to `/user/queue/errors`** on connect and renders whatever `ErrorDTO.error` says as a
+  notice — the frontend side of the new error-feedback path is already wired up and doesn't need touching.
 
 ---
 
 ## Known gaps (NOT production-ready)
 
-Ranked by how much they'd hurt right now, not just eventually:
+Ranked by how much they'd hurt right now, not just eventually. Items resolved since the last pass are called out
+so nobody re-does finished work.
 
-1. **GitHub OAuth2 is broken (see Auth model above), not just unimplemented.** `CustomOAuth2UserService` hardcodes
+1. **`PATCH /v1/users/{userId}` always returns 403 — breaks onboarding for every new user.** See HTTP contract
+   above for the exact bug (`UUID.equals(String)`). This is the single most urgent item: it's not a latent security
+   gap, it's a broken core flow that currently prevents any first-time Google login from ever reaching the rooms
+   screen. One-line fix: compare against `authUser.getUserId()`, not `authUser.getProviderId()`.
+2. **GitHub OAuth2 is broken (see Auth model above), not just unimplemented.** `CustomOAuth2UserService` hardcodes
    OIDC claim names (`sub`, `given_name`, `family_name`) that don't exist in GitHub's attribute map. A GitHub login
    attempt will fail to provision a `User` row (`provider_id` NOT NULL violation) or throw during attribute
-   extraction. Needs `registrationId`-based branching before it's usable at all.
-2. **Root `.env` is not gitignored.** `.gitignore` only excludes `src/main/resources/.env`, but
-   `application.properties` imports `spring.config.import=file:.env[.properties]`, which resolves relative to the
-   process working directory — i.e. the project root when run via Gradle — not `src/main/resources/`. The actual
-   `.env` in use (containing `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_SECRET`, DB credentials) sits at
-   `C:\Projects\ChattyChat\.env` and is currently untracked-but-not-ignored: a `git add -A` or `git add .` would
-   stage it. Fix: add a root-level `.env` entry (or `/.env`) to `.gitignore`. This is a live secret-leak risk, not a
-   theoretical one — flag it before any bulk `git add`.
-3. **`InboundMessageDTO.senderId` is still client-supplied and trusted.** The one piece of the old honor-system
-   identity model that the OAuth2 migration hasn't reached yet. `MessageWSController` has access to the
-   authenticated STOMP `Principal` (Spring wires it through automatically from the HTTP handshake) but doesn't use
-   it — `MessageService.save()` still does `userRepository.findById(incoming.senderId())` on whatever UUID the
-   client puts in the payload. A logged-in user can currently send messages as any other user whose UUID they can
-   obtain (e.g. from `GET /v1/users`, which lists everyone with no filtering).
-4. **`PATCH /v1/users/{userId}` isn't scoped to "yourself."** Any authenticated session can rename any user by UUID,
-   not just their own. Should resolve the target user from the authenticated principal, not the path variable (or at
-   minimum check `userId` matches the caller).
-5. **`SimpleUrlAuthenticationSuccessHandler` is hardcoded to `"http://localhost:8080"`.** Breaks the moment this is
+   extraction. Needs `registrationId`-based branching before it's usable at all. Unchanged since last review.
+3. **Google's narrowed OAuth scope needs a live re-test.** See the "New risk" note under Auth model — `openid` was
+   dropped from the requested scope while `CustomOAuth2UserService` still depends on the OIDC-only `sub` claim.
+   Unverified either way without running a real login; flagging so it gets checked rather than assumed fine.
+4. **`ui.js`'s "mine" message detection is broken.** Reads `state.userId`/`state.username`, which don't exist on
+   `state` anymore (see Frontend specifics). Every message currently renders as not-yours. This predates the
+   security-layers work and hasn't been touched.
+5. **`GET /v1/users` and `GET /v1/users/{id}` expose every user's email address to any authenticated caller, with
+   no filtering or pagination.** Reframed from the old gap: the impersonation angle that made this dangerous is
+   closed now (chat identity resolves server-side, not from a client-suppliable UUID), but this is still a
+   straightforward PII leak on its own — any logged-in user can enumerate everyone else's email.
+6. **No rate limiting yet on WebSocket message sends.** Still nothing in `MessageWSController`/`MessageService`/
+   `WebSocketConfig` that throttles frame rate. **This is the current active work item** — see Suggested next
+   steps. The prerequisite work (trustworthy per-user identity via `Principal`, and a feedback channel via
+   `/user/queue/errors`) is now done, so this can be built on solid ground.
+7. **`SimpleUrlAuthenticationSuccessHandler` is hardcoded to `"http://localhost:8080"`.** Breaks the moment this is
    deployed anywhere else. Needs to come from config (a property) rather than a string literal in `SecurityConfig`.
-6. **HTTP + hardcoded localhost.** Must be deployed with HTTPS/WSS and a real host before anyone off-machine can use
+8. **HTTP + hardcoded localhost.** Must be deployed with HTTPS/WSS and a real host before anyone off-machine can use
    it. Plaintext otherwise. (OAuth2 redirect URIs will also need updating for a real domain — Google/GitHub app
    configs are currently registered for `localhost:8080` callbacks only.)
-7. **No backups.** Add at least a nightly `pg_dump`.
-8. **Silent send failure.** No `@MessageExceptionHandler` — a failed persist drops the message with zero feedback to
-   the sender. Add one that sends an error frame back.
-9. **No server-side validation or rate limiting on message sends.** Frontend caps length at 1000 chars, but the
-   backend accepts anything, and nothing limits how fast a connected client can send. **This is the current active
-   work item — see Suggested next steps.**
-10. **`GET /v1/users` returns everyone with no pagination or filtering.** Minor now, but also the thing that makes
-    gap #3 easy to exploit (it hands out every other user's UUID for free).
+9. **No backups.** Add at least a nightly `pg_dump`.
+10. **No server-side validation on message/room content.** Frontend caps message length at 1000 chars and sanitizes
+    room names, but the backend accepts anything for either. The frontend is not a security boundary.
 11. **Operational blind spots.** No health check, no monitoring, `open-in-view` is on.
+
+**Resolved since the last pass — do not redo:**
+- ~~Root `.env` not gitignored~~ — fixed, `.gitignore` now has a root-level `.env` entry.
+- ~~`InboundMessageDTO.senderId` client-supplied and trusted~~ — fixed, sender now resolved from the STOMP
+  `Principal` server-side.
+- ~~Silent send failure~~ — fixed, `@MessageExceptionHandler` now routes failures to `/user/queue/errors`, and the
+  frontend already renders them.
+- ~~`WebSocketConfig` wildcard origin~~ — fixed, STOMP endpoint now locked to `http://localhost:8080` only.
 
 ---
 
 ## Suggested next steps (roughly ordered)
 
+**Immediate, before anything else:** fix the `PATCH /v1/users/{userId}` bug (gap #1). It's one line
+(`authUser.getUserId()` instead of `authUser.getProviderId()`), and until it's fixed, no new user can complete
+onboarding — every other item below is moot for anyone who isn't already sitting in the DB with a `displayName`
+set. Re-test the Google login flow live at the same time, both to confirm the PATCH fix and to settle the scope
+question (gap #3).
+
 **Current work in progress (per project owner, 2026-08-13):** rate limiting for WebSocket message sends, to prevent
-one client from overloading the server. Nothing in `MessageWSController`/`MessageService`/`WebSocketConfig` does any
-throttling today — every `@MessageMapping`-handled frame is persisted and broadcast with no limit. Things to weigh
-when implementing this:
+one client from overloading the server (gap #6). Now that sender identity is resolved from the authenticated
+`Principal` (no longer client-supplied) and there's a private error queue to report rejections on, both
+prerequisites this depended on are done. Things to weigh when implementing:
 - **Where to enforce it:** a `ChannelInterceptor` on the STOMP inbound channel (`configureClientInboundChannel` in
   `WebSocketConfig`) is the natural fit — it sees every frame before it reaches `MessageWSController`, and can reject
   by throwing (or silently dropping) without touching the controller/service at all.
-- **What key to rate-limit on:** per authenticated user (via the STOMP `Principal`, same one gap #3 above needs
-  wired up) is more correct than per-session or per-IP, and this is a good forcing function to finally read that
-  `Principal` instead of trusting `senderId` from the payload — the rate limiter needs a trustworthy identity anyway.
-- **Feedback on rejection:** ties into gap #8 (silent send failure) — a rate-limited message should tell the sender
-  it was dropped (e.g. a `/user/queue/errors` frame), not just vanish, or debugging "why didn't my message send"
-  becomes painful.
+- **What key to rate-limit on:** per authenticated user, via the same `Principal` → `AuthUser` → `getUserId()` path
+  `MessageWSController.sendToRoom` already uses. Don't rate-limit by session or IP; the trustworthy per-user
+  identity is already there for the taking.
+- **Feedback on rejection:** reuse `/user/queue/errors` (`ErrorDTO`) — it already exists and the frontend already
+  subscribes to it. A rate-limited message should tell the sender it was dropped, not just vanish.
 - **Scope of the limiter:** in-memory (e.g. a simple token bucket per user id in a `ConcurrentHashMap`) is fine at
   this project's scale — no need for Redis/distributed rate limiting for a single-instance learning app.
 
 After that, roughly in order:
-1. Fix GitHub OAuth2 attribute extraction (gap #1) — the other provider shouldn't stay broken indefinitely.
-2. Fix the root `.env` gitignore gap (gap #2) — quick, and it's a live leak risk.
-3. Wire `MessageWSController` to resolve `senderId` from the authenticated `Principal` instead of the DTO (gap #3) —
-   naturally pairs with the rate-limiting work above since both need the same trustworthy identity source.
-4. Scope `PATCH /v1/users/{userId}` to the caller's own id (gap #4).
-5. `@MessageExceptionHandler` in `MessageWSController` → send failures (including future rate-limit rejections) back
-   to the sender.
-6. Server-side content validation (non-empty, max length) on inbound messages.
-7. Move the OAuth2 success-handler URL and redirect URIs to config, ahead of any real deployment.
-8. Flyway migrations; flip `ddl-auto` to `validate`.
-9. Deploy target: managed Postgres (gets you TLS + backups) behind HTTPS/WSS.
-10. Optional/learning: virtual-thread executor on the STOMP inbound channel for cheaper blocking-JDBC concurrency —
-    note this can reorder within-room messages; consider `setPreservePublishOrder(true)`. Only meaningful at
-    hundreds of concurrent handlers, which this is nowhere near.
+1. Fix GitHub OAuth2 attribute extraction (gap #2) — the other provider shouldn't stay broken indefinitely.
+2. Fix `ui.js`'s stale `state.userId`/`state.username` read (gap #4) — quick, and "every message looks like it's
+   not yours" is a bad first impression for anyone testing the app right now.
+3. Narrow `GET /v1/users`/`GET /v1/users/{id}` to not leak email to arbitrary authenticated callers (gap #5) — a
+   lighter list DTO without `email`, or scope it down to room-mates only.
+4. Server-side content validation (non-empty, max length) on inbound messages and room names (gap #10).
+5. Move the OAuth2 success-handler URL and redirect URIs to config, ahead of any real deployment (gap #7).
+6. Flyway migrations; flip `ddl-auto` to `validate`.
+7. Deploy target: managed Postgres (gets you TLS + backups) behind HTTPS/WSS.
+8. Optional/learning: virtual-thread executor on the STOMP inbound channel for cheaper blocking-JDBC concurrency —
+   note this can reorder within-room messages; consider `setPreservePublishOrder(true)`. Only meaningful at
+   hundreds of concurrent handlers, which this is nowhere near.
 
 ---
 

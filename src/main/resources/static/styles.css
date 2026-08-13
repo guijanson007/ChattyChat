@@ -108,6 +108,13 @@ label { font-size: 13px; color: var(--ink-2); }
 .btn--ghost:hover { background: #fafafb; color: var(--ink); opacity: 1; }
 .btn--icon { padding: 12px; width: 44px; height: 44px; }
 
+.oauth-list { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.oauth-icon { width: 18px; height: 18px; flex: none; }
+.btn--oauth { text-decoration: none; }
+.btn--google { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
+.btn--google:hover { background: #fafafb; opacity: 1; }
+.btn--github { background: var(--ink); color: #fff; }
+
 /* ---------- room selection ---------- */
 #screen-rooms { flex-direction: column; align-items: center; overflow-y: auto; }
 .rooms-wrap { width: 100%; max-width: 560px; padding: 48px 24px 64px; }

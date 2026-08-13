@@ -30,8 +30,5 @@ public class UserService {
                 .map(User::toDTO)
                 .orElse(null);
     }
-
-    public UserDTO addUser(UserDTO user) {
-        return userRepository.save(new User(user.id(), user.name())).toDTO();
-    }
+    
 }

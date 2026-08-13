@@ -37,7 +37,7 @@ public class MessageService {
                 new ChatMessage(sender, room, incoming.content(), LocalDateTime.now())
         );
 
-        return new OutboundMessageDTO(saved.getId(), sender.getId(), sender.getName(),
+        return new OutboundMessageDTO(saved.getId(), sender.getId(), sender.getFirstName(),
                 room.getName(), saved.getContent(), saved.getSentAt());
     }
 
@@ -46,7 +46,7 @@ public class MessageService {
                 .stream()
                 .map(m -> new OutboundMessageDTO(
                         m.getId(), m.getSender().getId(),
-                        m.getSender().getName(), m.getRoom().getName(),
+                        m.getSender().getFirstName(), m.getRoom().getName(),
                         m.getContent(), m.getSentAt()))
                 .toList();
     }

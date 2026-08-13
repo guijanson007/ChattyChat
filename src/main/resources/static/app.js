@@ -63,7 +63,7 @@
 
     /* ---------------- helpers ---------------- */
     function showScreen(id) {
-        ['screen-name', 'screen-rooms', 'screen-chat'].forEach(function (s) {
+        ['screen-login', 'screen-name', 'screen-rooms', 'screen-chat'].forEach(function (s) {
             el[s].classList.toggle('is-active', s === id);
         });
     }
@@ -78,7 +78,12 @@
     }
     function setHint(node, msg) { node.textContent = msg || ''; }
 
-    /* ---------------- screen 1: username ---------------- */
+    /* ---------------- screen 1: login ---------------- */
+    function showLoginScreen() {
+        showScreen('screen-login');
+    }
+
+    /* ---------------- screen 2: username ---------------- */
     function showUsernameScreen() {
         showScreen('screen-name');
         el['input-name'].value = state.username || loadName();
@@ -380,7 +385,7 @@
 
     /* ---------------- boot ---------------- */
     function cacheEls() {
-        ['screen-name', 'screen-rooms', 'screen-chat', 'form-name', 'input-name', 'hint-name',
+        ['screen-login', 'screen-name', 'screen-rooms', 'screen-chat', 'form-name', 'input-name', 'hint-name',
             'btn-name', 'avatar', 'who-name', 'btn-change-name', 'room-list', 'rooms-empty',
             'form-room', 'input-room', 'hint-room', 'btn-back', 'chat-title', 'chat-meta',
             'status', 'status-text', 'messages', 'form-msg', 'input-msg', 'btn-send']
@@ -403,7 +408,7 @@
         state.username = loadName();
         state.userId = loadUserId();
         if (state.username && state.userId) showRoomSelection();
-        else showUsernameScreen();
+        else showLoginScreen();
     }
 
     document.addEventListener('DOMContentLoaded', initializeApp);

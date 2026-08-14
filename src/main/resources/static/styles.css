@@ -225,6 +225,14 @@ label { font-size: 13px; color: var(--ink-2); }
 .msg--mine .bubble { background: var(--bubble-me); color: #fff; border-bottom-right-radius: 5px; }
 .msg:not(.msg--mine) .bubble { border-bottom-left-radius: 5px; }
 
+.msg--pending .bubble { opacity: .55; }
+.msg--pending .msg-time { font-style: italic; }
+
+.msg--failed { cursor: pointer; }
+.msg--failed .bubble { background: #fdf6f6; color: var(--err); border: 1px solid #f3d6d6; }
+.msg--failed .msg-time { color: var(--err); }
+.msg--failed:hover .bubble { background: #fbeaea; }
+
 .notice {
     align-self: center; max-width: 100%;
     font-size: 12.5px; color: var(--ink-3);

@@ -124,9 +124,11 @@ function submitRoom(e) {
 
 function joinRoom(room) {
     state.room = room;
+    var display = state.user.displayName || state.user.firstName;
     el['chat-title'].textContent = '# ' + room;
-    el['chat-meta'].textContent = 'como ' + state.username;
+    el['chat-meta'].textContent = 'como ' + display;
     el.messages.innerHTML = '';
+    state.pending = [];
     showScreen('screen-chat');
     el['input-msg'].focus();
     loadHistory(room);

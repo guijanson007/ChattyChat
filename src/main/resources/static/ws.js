@@ -1,6 +1,6 @@
 import {DEST, TOPIC, WS_URL} from './config.js';
 import {state} from './state.js';
-import {renderMessage, renderNotice, setStatus} from './ui.js';
+import {renderMessage, renderNotice, setStatus, renderPendingMessage, markNodePending, markNodeSent, markNodeFailed} from './ui.js';
 import {formatSentAt} from './utils.js';
 
 export function connect() {
@@ -29,7 +29,17 @@ function onConnected() {
     // Subscribe to user-specific errors ONCE upon connection
     state.client.subscribe('/user/queue/errors', function (frame) {
         var err = JSON.parse(frame.body);
-        renderNotice('Erro: ' + err.error, 'error');
+        // The server doesn't echo back which send failed, but frames from a single
+        // client are processed in order, so the oldest still-pending message is the
+        // one that just errored.
+        var pending = state.pending.shift();
+        if (pending) {
+            markNodeFailed(pending.node, function () {
+                retrySend(pending.content, pending.node);
+            });
+        } else {
+            renderNotice('Erro: ' + err.error, 'error');
+        }
     });
 
     subscribeToRoom(state.room);
@@ -54,6 +64,14 @@ function onFrame(frame) {
     try {
         m = JSON.parse(frame.body);
     } catch (e) {
+        return;
+    }
+    // Our own message coming back through the broadcast confirms the oldest pending
+    // send (frames from a single client are delivered in order, so FIFO is correct
+    // here even though the server doesn't echo back a client-side correlation id).
+    if (state.user && m.senderId === state.user.id && state.pending.length) {
+        var pending = state.pending.shift();
+        markNodeSent(pending.node, formatSentAt(m.sentAt));
         return;
     }
     renderMessage({
@@ -81,19 +99,42 @@ export function disconnect() {
     }
     state.connected = false;
     setStatus('offline', 'offline');
+
+    // Anything still pending will never be confirmed now — surface it as failed
+    // instead of leaving it stuck on "enviando…" forever.
+    if (state.pending.length) {
+        var stuck = state.pending;
+        state.pending = [];
+        stuck.forEach(function (p) {
+            markNodeFailed(p.node, function () {
+                retrySend(p.content, p.node);
+            });
+        });
+    }
+}
+
+function trySend(content, node) {
+    if (!state.client || !state.connected) {
+        markNodeFailed(node, function () {
+            retrySend(content, node);
+        });
+        return;
+    }
+    state.pending.push({node: node, content: content});
+    state.client.send(DEST(state.room), {}, JSON.stringify({content: content}));
+}
+
+function retrySend(content, node) {
+    markNodePending(node);
+    trySend(content, node);
 }
 
 export function sendMessage(content) {
-    if (!state.client || !state.connected) {
-        renderNotice('Você está offline — mensagem não enviada.', 'error');
-        return false;
-    }
     if (!state.user || !state.user.id) {
         renderNotice('Sessão sem ID de usuário. Recarregue a página.', 'error');
         return false;
     }
-    state.client.send(DEST(state.room), {}, JSON.stringify({
-        content: content
-    }));
+    var node = renderPendingMessage(content);
+    trySend(content, node);
     return true;
 }

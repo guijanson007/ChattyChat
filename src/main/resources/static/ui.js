@@ -43,9 +43,7 @@ export function renderRoomList(onJoinRoom) {
 }
 
 export function renderMessage(msg) {
-    var mine = (msg.senderId && state.userId)
-        ? msg.senderId === state.userId
-        : msg.from === state.username;
+    var mine = !!(state.user && msg.senderId && msg.senderId === state.user.id);
     var stick = isAtBottom() || mine;
 
     var wrap = document.createElement('div');
@@ -80,4 +78,55 @@ export function renderNotice(text, kind) {
     n.textContent = text;
     el.messages.appendChild(n);
     scrollToLatest(stick);
+}
+
+// Renders an outgoing message immediately, before server confirmation, and returns
+// the DOM node so the caller can later transition it to sent/failed without a re-render.
+export function renderPendingMessage(content) {
+    var wrap = document.createElement('div');
+    wrap.className = 'msg msg--mine msg--pending';
+
+    var head = document.createElement('div');
+    head.className = 'msg-head';
+    var from = document.createElement('span');
+    from.className = 'msg-from';
+    from.textContent = 'você';
+    var time = document.createElement('span');
+    time.className = 'msg-time';
+    time.textContent = 'enviando…';
+    head.appendChild(from);
+    head.appendChild(time);
+
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = content;
+
+    wrap.appendChild(head);
+    wrap.appendChild(bubble);
+    el.messages.appendChild(wrap);
+    scrollToLatest(true);
+    return wrap;
+}
+
+export function markNodePending(node) {
+    node.classList.remove('msg--failed');
+    node.classList.add('msg--pending');
+    node.onclick = null;
+    var time = node.querySelector('.msg-time');
+    if (time) time.textContent = 'enviando…';
+}
+
+export function markNodeSent(node, formattedSentAt) {
+    node.classList.remove('msg--pending', 'msg--failed');
+    node.onclick = null;
+    var time = node.querySelector('.msg-time');
+    if (time) time.textContent = formattedSentAt;
+}
+
+export function markNodeFailed(node, onRetry) {
+    node.classList.remove('msg--pending');
+    node.classList.add('msg--failed');
+    var time = node.querySelector('.msg-time');
+    if (time) time.textContent = '⚠ não enviada — toque para tentar novamente';
+    node.onclick = onRetry;
 }

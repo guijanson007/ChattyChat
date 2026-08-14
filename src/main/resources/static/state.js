@@ -4,7 +4,8 @@ export const state = {
     rooms: [],
     client: null,
     subscription: null,
-    connected: false
+    connected: false,
+    pending: [] // FIFO queue of { node, content } for optimistically-rendered outgoing messages awaiting confirmation
 };
 
 export const el = {};

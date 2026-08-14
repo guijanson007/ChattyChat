@@ -1,4 +1,6 @@
-export const API_BASE = 'http://localhost:8080';
+// Same-origin: works on http://localhost:8080 and https://chattychat.guilhermetests.com alike.
+export const API_BASE = window.location.origin;
+
 export const API = {
     me: API_BASE + '/v1/users/me',
     users: (id) => API_BASE + '/v1/users/' + id,

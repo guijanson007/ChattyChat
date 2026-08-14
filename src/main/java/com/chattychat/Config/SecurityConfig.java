@@ -37,9 +37,16 @@ public class SecurityConfig {
         // Set the name of the attribute the CsrfFilter expects
         requestHandler.setCsrfRequestAttributeName("_csrf");
 
+        CookieCsrfTokenRepository tokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        tokenRepository.setCookieCustomizer(cookie -> cookie
+                // TODO: Handle secure flag based on environment (dev vs prod)
+                .secure(true)
+                .sameSite("Lax")
+        );
+
         http
-                .csrf((csrf) -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(tokenRepository)
                         .csrfTokenRequestHandler(requestHandler)
                 )
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
@@ -55,7 +62,7 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)
                         )
-                        .successHandler(new SimpleUrlAuthenticationSuccessHandler("http://localhost:8080"))
+                        .successHandler(new SimpleUrlAuthenticationSuccessHandler("/"))
                 );
         return http.build();
     }

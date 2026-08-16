@@ -5,6 +5,8 @@ import com.chattychat.dto.AuthUser;
 import com.chattychat.dto.ErrorDTO;
 import com.chattychat.dto.InboundMessageDTO;
 import com.chattychat.dto.OutboundMessageDTO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 
 @Controller
+@Tag(name = "Message Management (WebSocket)", description = "Endpoints for managing messages via WebSocket")
 public class MessageWSController {
     private final SimpMessagingTemplate messagingTemplate;
     private final MessageService messageService;
@@ -25,6 +28,7 @@ public class MessageWSController {
         this.messageService = messageService;
     }
 
+    @Operation(summary = "Send Message to Room via WebSocket", description = "Send a message to a specific chat room.")
     @MessageMapping("/chat.send/{room}")
     @SendTo("/topic/chat/{room}")
     public OutboundMessageDTO sendToRoom(

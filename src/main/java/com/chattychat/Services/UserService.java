@@ -47,4 +47,14 @@ public class UserService {
         return user.toDTO();
     }
 
+    public UserDTO deleteUser(UUID userId) {
+        User user = userRepository.findById(userId).orElse(null);
+
+        if (user == null) {
+            return null;
+        }
+        userRepository.delete(user);
+        return user.toDTO();
+    }
+
 }

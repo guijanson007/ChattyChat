@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -50,7 +51,14 @@ public class MessageService {
     }
 
     public List<OutboundMessageDTO> history(String roomName) {
-        return messageRepository.findByRoomNameOrderBySentAtAsc(roomName)
+        Optional<List<ChatMessage>> response = messageRepository.findByRoomNameOrderBySentAtAsc(roomName);
+
+        if (response.isEmpty()) {
+            return null;
+        }
+
+        return response
+                .get()
                 .stream()
                 .map(m -> {
                     User sender = m.getSender();

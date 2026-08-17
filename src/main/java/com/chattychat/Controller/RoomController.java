@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,8 +51,9 @@ public class RoomController {
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
     @PostMapping
-    public ResponseEntity<RoomDTO> createRoom(@RequestBody RoomDTO room) {
-        return ResponseEntity.created(URI.create("/v1/rooms"))
-                .body(roomService.createRoom(room));
+    public ResponseEntity<RoomDTO> createRoom(@RequestBody @Valid RoomDTO room) {
+        RoomDTO createdRoom = roomService.createRoom(room);
+        return ResponseEntity.created(URI.create("/v1/rooms/" + createdRoom.id()))
+                .body(createdRoom);
     }
 }

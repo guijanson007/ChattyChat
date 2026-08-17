@@ -40,6 +40,6 @@ public class MessageRestController {
     @GetMapping("/{room}/messages")
     public ResponseEntity<List<OutboundMessageDTO>> history(@PathVariable String room) {
         List<OutboundMessageDTO> messages = messageService.history(room);
-        return messages.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(messages);
+        return messages == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(messages);
     }
 }

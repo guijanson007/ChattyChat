@@ -35,8 +35,7 @@ public class Room {
         return new RoomDTO(id, name, createdAt);
     }
 
-    public Room(UUID id, String name) {
-        this.id = id;
+    public Room(String name) {
         this.name = name;
     }
 

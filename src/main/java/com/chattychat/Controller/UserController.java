@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -110,10 +109,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        if (userId == null || request == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
         if (!userId.equals(authUser.getUserId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -137,7 +132,11 @@ public class UserController {
     @DeleteMapping("/{userId}")
     public ResponseEntity<UserDTO> deleteUser(
             @AuthenticationPrincipal AuthUser authUser,
-            @PathVariable @NotNull UUID userId) {
+            @PathVariable UUID userId) {
+
+        if (authUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         if (!authUser.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

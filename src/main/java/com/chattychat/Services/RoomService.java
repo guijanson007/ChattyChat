@@ -24,6 +24,6 @@ public class RoomService {
     }
 
     public RoomDTO createRoom(RoomDTO room) {
-        return roomRepository.save(new Room(room.id(), room.name())).toDTO();
+        return roomRepository.save(new Room(room.name())).toDTO();
     }
 }

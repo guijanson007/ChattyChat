@@ -57,7 +57,8 @@ public class UserController {
     })
     @GetMapping("/{userId}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable UUID userId) {
-        return ResponseEntity.ok(userService.getUserById(userId));
+        UserDTO userDTO = userService.getUserById(userId);
+        return userDTO == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(userDTO);
     }
 
     @Operation(summary = "Get Current User", description = "Retrieve details of the currently authenticated user.")

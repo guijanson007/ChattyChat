@@ -28,14 +28,19 @@ public class MessageWSController {
             Principal principal,
             @DestinationVariable("room") String roomName,
             @Payload InboundMessageDTO msg) {
-
         Authentication auth = (Authentication) principal;
-        AuthUser user = (AuthUser) auth.getPrincipal();   // get authUser
+        AuthUser user = (AuthUser) auth.getPrincipal();
+
+        assert user != null;
         return messageService.save(roomName, user.getUserId(), msg);
     }
 
     @MessageExceptionHandler
     public void handleException(Throwable exception, Principal principal) {
+        if (principal == null) {
+            return;
+        }
+
         // Send the error message only to the specific user's private error queue
         messagingTemplate.convertAndSendToUser(
                 principal.getName(),

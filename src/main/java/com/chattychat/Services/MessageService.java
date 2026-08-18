@@ -3,6 +3,7 @@ package com.chattychat.Services;
 import com.chattychat.Entities.ChatMessage;
 import com.chattychat.Entities.Room;
 import com.chattychat.Entities.User;
+import com.chattychat.Exception.InvalidRoomException;
 import com.chattychat.Repositories.MessageRepository;
 import com.chattychat.Repositories.RoomRepository;
 import com.chattychat.Repositories.UserRepository;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -51,14 +51,14 @@ public class MessageService {
     }
 
     public List<OutboundMessageDTO> history(String roomName) {
-        Optional<List<ChatMessage>> response = messageRepository.findByRoomNameOrderBySentAtAsc(roomName);
-
-        if (response.isEmpty()) {
-            return null;
+        if (!roomRepository.existsByName(roomName)) {
+            throw new InvalidRoomException("Unknown room: " + roomName);
         }
 
-        return response
-                .get()
+        // This returns an empty list [] if no messages exist.
+        List<ChatMessage> messages = messageRepository.findByRoomNameOrderBySentAtAsc(roomName).get();
+
+        return messages
                 .stream()
                 .map(m -> {
                     User sender = m.getSender();

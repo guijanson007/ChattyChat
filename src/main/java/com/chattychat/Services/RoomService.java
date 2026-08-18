@@ -6,7 +6,6 @@ import com.chattychat.dto.RoomDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class RoomService {
@@ -20,7 +19,7 @@ public class RoomService {
         return roomRepository.findAll()
                 .stream()
                 .map(room -> new RoomDTO(room.getId(), room.getName(), room.getCreatedAt()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public RoomDTO createRoom(RoomDTO room) {

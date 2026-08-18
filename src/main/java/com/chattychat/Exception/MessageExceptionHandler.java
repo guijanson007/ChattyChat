@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
-public class UserExceptionHandler {
-    @ExceptionHandler(InvalidUserException.class)
-    public ResponseEntity<Object> handleInvalidUserException(InvalidUserException ex) {
+public class MessageExceptionHandler {
+    @ExceptionHandler(InvalidMessageException.class)
+    public ResponseEntity<Object> handleInvalidMessageException(InvalidMessageException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 }

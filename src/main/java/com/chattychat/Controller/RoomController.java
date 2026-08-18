@@ -51,7 +51,9 @@ public class RoomController {
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
     @PostMapping
-    public ResponseEntity<RoomDTO> createRoom(@RequestBody @Valid RoomDTO room) {
+    public ResponseEntity<RoomDTO> createRoom(
+            @RequestBody @Valid RoomDTO room
+    ) {
         RoomDTO createdRoom = roomService.createRoom(room);
         return ResponseEntity.created(URI.create("/v1/rooms/" + createdRoom.id()))
                 .body(createdRoom);

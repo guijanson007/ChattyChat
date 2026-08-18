@@ -1,6 +1,7 @@
 package com.chattychat.Services;
 
 import com.chattychat.Entities.User;
+import com.chattychat.Exception.AuthenticationException;
 import com.chattychat.Repositories.UserRepository;
 import com.chattychat.dto.AuthUser;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -21,8 +22,17 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     @Override
-    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2User oAuth2User = super.loadUser(userRequest);
+    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws AuthenticationException {
+        OAuth2User oAuth2User;
+        try {
+            oAuth2User = super.loadUser(userRequest);
+        } catch (OAuth2AuthenticationException e) {
+            throw new AuthenticationException(new StringBuilder(
+                    "Failed to load user from OAuth2 provider")
+                    .append(": ")
+                    .append(e.getError().getDescription()).toString()
+            );
+        }
 
         String provider = userRequest.getClientRegistration().getRegistrationId();
         String providerId = oAuth2User.getAttribute("sub");
@@ -44,7 +54,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     return userRepository.save(newUser);
                 });
 
-        // Pass clean primitives instead of the raw, non-serializable attribute map blocks
         return new AuthUser(user.getId(), provider, providerId, resolvedName, Collections.emptyMap());
     }
 }

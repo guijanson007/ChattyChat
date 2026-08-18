@@ -11,8 +11,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,8 +56,7 @@ public class UserController {
     })
     @GetMapping("/{userId}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable UUID userId) {
-        UserDTO userDTO = userService.getUserById(userId);
-        return userDTO == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(userDTO);
+        return ResponseEntity.ok(userService.getUserById(userId));
     }
 
     @Operation(summary = "Get Current User", description = "Retrieve details of the currently authenticated user.")
@@ -71,20 +70,10 @@ public class UserController {
     })
     @GetMapping("/me")
     public ResponseEntity<UserDTO> getCurrentUser(@AuthenticationPrincipal AuthUser authUser) {
-        if (authUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        UserDTO userDTO = userService.getUserByProviderAndProviderId(
+        return ResponseEntity.ok(userService.getUserByProviderAndProviderId(
                 authUser.getProvider(),
                 authUser.getProviderId()
-        );
-
-        if (userDTO == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        return ResponseEntity.ok(userDTO);
+        ));
     }
 
     @Operation(summary = "Update User Display Name", description = "Update the display name of a user. Users can only update their own display name.")
@@ -100,19 +89,11 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
     })
     @PatchMapping("/{userId}")
+    @PreAuthorize("authUser.userId() == #userId")
     public ResponseEntity<UserDTO> updateUserDisplayName(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID userId,
             @RequestBody UpdateNameRequestDTO request) {
-
-        if (authUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        if (!userId.equals(authUser.getUserId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
         UserDTO updatedUser = userService.updateUserDisplayName(userId, request.displayName());
         return ResponseEntity.ok(updatedUser);
     }
@@ -130,23 +111,10 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
     })
     @DeleteMapping("/{userId}")
+    @PreAuthorize("authUser.userId() == #userId")
     public ResponseEntity<UserDTO> deleteUser(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID userId) {
-
-        if (authUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        if (!authUser.getUserId().equals(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        UserDTO deletedUser = userService.deleteUser(userId);
-        if (deletedUser == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        return ResponseEntity.ok(deletedUser);
+        return ResponseEntity.ok(userService.deleteUser(userId));
     }
 }

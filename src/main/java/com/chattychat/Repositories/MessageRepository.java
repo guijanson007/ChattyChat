@@ -8,5 +8,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface MessageRepository extends JpaRepository<ChatMessage, UUID> {
-    Optional<List<ChatMessage>> findByRoomNameOrderBySentAtAsc(String roomName);
+    Optional<List<ChatMessage>> findByRoomNameOrderByCreatedAtAsc(String roomName);
 }

@@ -143,7 +143,7 @@ function loadHistory(room) {
                     senderId: m.senderId || null,
                     from: m.from || 'anon',
                     content: m.content || '',
-                    sentAt: formatSentAt(m.sentAt)
+                    createdAt: formatSentAt(m.sentAt)
                 });
             });
         })

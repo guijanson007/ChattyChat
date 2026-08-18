@@ -29,13 +29,13 @@ public class ChatMessage {
     @Column(nullable = false, length = 1000)
     private String content;
 
-    @Column(name = "sent_at", nullable = false)   // no unique
-    private LocalDateTime sentAt;
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
 
-    public ChatMessage(User sender, Room room, String content, LocalDateTime sentAt) {
+    public ChatMessage(User sender, Room room, String content, LocalDateTime createdAt) {
         this.sender = sender;
         this.room = room;
         this.content = content;
-        this.sentAt = sentAt;
+        this.createdAt = createdAt;
     }
 }

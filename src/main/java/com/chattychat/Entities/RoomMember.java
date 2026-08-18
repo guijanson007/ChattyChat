@@ -1,7 +1,6 @@
 package com.chattychat.Entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,8 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "RoomMember")
-@AllArgsConstructor
+@Table(name = "room_members")
 @NoArgsConstructor
 public class RoomMember {
 
@@ -29,7 +27,14 @@ public class RoomMember {
     @JoinColumn(name = "room_id")
     private Room room;
 
-    @Column(name = "joined_at", nullable = false)
     private LocalDateTime joinedAt;
 
+    // Custom constructor for easier instantiation
+    public RoomMember(User member, Room room) {
+        this.member = member;
+        this.room = room;
+        this.joinedAt = LocalDateTime.now();
+        // Manually sync the composite ID to avoid issues before Hibernate flushes
+        this.id = new RoomMemberId(member.getId(), room.getId());
+    }
 }

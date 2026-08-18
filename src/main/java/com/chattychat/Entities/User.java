@@ -14,39 +14,29 @@ import java.util.UUID;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(
-        name = "Users",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"provider", "provider_id"})
-        }
-)
+@Table(name = "users")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "user_id", updatable = false, nullable = false)
+    @Column(updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "provider_id", nullable = false)
+    @Column(nullable = false)
     private String providerId;
 
-    @Column(name = "provider", nullable = false)
+    @Column(nullable = false)
     private String provider;
 
-    @Column(name = "first_name")
     private String firstName;
 
-    @Column(name = "last_name")
     private String lastName;
 
-    @Column(name = "email", nullable = true)
     private String email;
 
-    @Column(name = "display_name")
     private String displayName;
 
     public UserDTO toDTO() {
         return new UserDTO(id, firstName, lastName, email, displayName);
     }
-
 }

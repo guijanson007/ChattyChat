@@ -1,7 +1,15 @@
 import {DEST, TOPIC, WS_URL} from './config.js';
 import {state} from './state.js';
-import {renderMessage, renderNotice, setStatus, renderPendingMessage, markNodePending, markNodeSent, markNodeFailed} from './ui.js';
-import {formatSentAt} from './utils.js';
+import {
+    markNodeFailed,
+    markNodePending,
+    markNodeSent,
+    renderMessage,
+    renderNotice,
+    renderPendingMessage,
+    setStatus
+} from './ui.js';
+import {formatCreatedAt} from './utils.js';
 
 export function connect() {
     setStatus('connecting', 'conectando…');
@@ -71,14 +79,14 @@ function onFrame(frame) {
     // here even though the server doesn't echo back a client-side correlation id).
     if (state.user && m.senderId === state.user.id && state.pending.length) {
         var pending = state.pending.shift();
-        markNodeSent(pending.node, formatSentAt(m.sentAt));
+        markNodeSent(pending.node, formatCreatedAt(m.createdAt));
         return;
     }
     renderMessage({
         senderId: m.senderId || null,
         from: m.from || 'anon',
         content: m.content || '',
-        sentAt: formatSentAt(m.sentAt)
+        createdAt: formatCreatedAt(m.createdAt)
     });
 }
 

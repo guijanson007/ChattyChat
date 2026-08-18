@@ -8,6 +8,6 @@ public record OutboundMessageDTO(
         UUID senderId,
         String from,
         String content,
-        LocalDateTime sentAt
+        LocalDateTime createdAt
 ) {
 }

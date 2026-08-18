@@ -56,4 +56,5 @@ jar {
 
 tasks.named('test') {
     useJUnitPlatform()
+    jvmArgs('-XX:+EnableDynamicAgentLoading')
 }

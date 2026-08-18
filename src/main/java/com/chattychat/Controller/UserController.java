@@ -89,7 +89,7 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
     })
     @PatchMapping("/{userId}")
-    @PreAuthorize("authUser.userId() == #userId")
+    @PreAuthorize("#authUser.userId() == #userId")
     public ResponseEntity<UserDTO> updateUserDisplayName(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID userId,
@@ -111,7 +111,7 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
     })
     @DeleteMapping("/{userId}")
-    @PreAuthorize("authUser.userId() == #userId")
+    @PreAuthorize("#authUser.userId() == #userId")
     public ResponseEntity<UserDTO> deleteUser(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID userId) {

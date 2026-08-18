@@ -46,7 +46,7 @@ public class MessageService {
                 sender.getId(),
                 fromName,
                 saved.getContent(),
-                saved.getSentAt()
+                saved.getCreatedAt()
         );
     }
 
@@ -56,7 +56,7 @@ public class MessageService {
         }
 
         // This returns an empty list [] if no messages exist.
-        List<ChatMessage> messages = messageRepository.findByRoomNameOrderBySentAtAsc(roomName).get();
+        List<ChatMessage> messages = messageRepository.findByRoomNameOrderByCreatedAtAsc(roomName).get();
 
         return messages
                 .stream()
@@ -68,7 +68,7 @@ public class MessageService {
                             sender.getId(),
                             fromName,
                             m.getContent(),
-                            m.getSentAt()
+                            m.getCreatedAt()
                     );
                 })
                 .toList();

@@ -18,7 +18,7 @@ public class RoomService {
     public List<RoomDTO> getAllRooms() {
         return roomRepository.findAll()
                 .stream()
-                .map(room -> new RoomDTO(room.getId(), room.getName(), room.getCreatedAt()))
+                .map(room -> new RoomDTO(room.getId(), room.getName(), room.getCreatedAt(), room.isPublic()))
                 .toList();
     }
 

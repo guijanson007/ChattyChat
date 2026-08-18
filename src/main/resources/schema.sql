@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS ROOMS
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name            VARCHAR(255) NOT NULL,
     created_at      TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
-    last_updated_at TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
+    last_updated_at TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    is_public       BOOLEAN          DEFAULT TRUE
 );
 
 CREATE TABLE IF NOT EXISTS MESSAGES

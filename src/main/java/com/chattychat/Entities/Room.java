@@ -19,20 +19,14 @@ import java.util.UUID;
 public class Room {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, unique = true)
     private UUID id;
-
-    @Column(name = "name", nullable = false)
     private String name;
-
-    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "last_updated_at")
     private LocalDateTime lastUpdatedAt;
+    private boolean isPublic;
 
     public RoomDTO toDTO() {
-        return new RoomDTO(id, name, createdAt);
+        return new RoomDTO(id, name, createdAt, isPublic);
     }
 
     public Room(String name) {

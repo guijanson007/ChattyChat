@@ -56,7 +56,7 @@ export function renderMessage(msg) {
     from.textContent = mine ? 'você' : msg.from;
     var time = document.createElement('span');
     time.className = 'msg-time';
-    time.textContent = msg.sentAt;
+    time.textContent = msg.createdAt;
     head.appendChild(from);
     head.appendChild(time);
 
@@ -68,6 +68,117 @@ export function renderMessage(msg) {
     wrap.appendChild(bubble);
     el.messages.appendChild(wrap);
     scrollToLatest(stick);
+}
+
+export function renderDiscoverRooms(rooms, onRegister) {
+    var list = el['discover-list'];
+    list.innerHTML = '';
+    rooms.forEach(function (room) {
+        var li = document.createElement('li');
+        var row = document.createElement('div');
+        row.className = 'action-item';
+
+        var label = document.createElement('span');
+        label.className = 'action-item-label';
+        label.innerHTML = '<span class="hash">#</span>';
+        var name = document.createElement('span');
+        name.className = 'rn';
+        name.textContent = room;
+        label.appendChild(name);
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn--ghost';
+        btn.textContent = 'Registrar';
+        btn.addEventListener('click', function () { onRegister(room, btn); });
+
+        row.appendChild(label);
+        row.appendChild(btn);
+        li.appendChild(row);
+        list.appendChild(li);
+    });
+    el['discover-empty'].hidden = rooms.length > 0;
+}
+
+export function renderInvites(invites, onAccept, onDecline) {
+    var list = el['invite-list'];
+    list.innerHTML = '';
+    invites.forEach(function (invite) {
+        var li = document.createElement('li');
+        var row = document.createElement('div');
+        row.className = 'action-item';
+
+        var label = document.createElement('span');
+        label.className = 'action-item-label';
+        label.textContent = '#' + invite.room + ' — convite de ' + invite.invitedBy;
+
+        var actions = document.createElement('div');
+        actions.className = 'action-item-buttons';
+
+        var accept = document.createElement('button');
+        accept.type = 'button';
+        accept.className = 'btn btn--icon';
+        accept.textContent = '✓';
+        accept.setAttribute('aria-label', 'Aceitar convite para #' + invite.room);
+        accept.addEventListener('click', function () { onAccept(invite); });
+
+        var decline = document.createElement('button');
+        decline.type = 'button';
+        decline.className = 'btn btn--icon btn--ghost';
+        decline.textContent = '✕';
+        decline.setAttribute('aria-label', 'Recusar convite para #' + invite.room);
+        decline.addEventListener('click', function () { onDecline(invite); });
+
+        actions.appendChild(accept);
+        actions.appendChild(decline);
+        row.appendChild(label);
+        row.appendChild(actions);
+        li.appendChild(row);
+        list.appendChild(li);
+    });
+    el['invites-panel'].hidden = invites.length === 0;
+}
+
+export function openInviteModal(roomName) {
+    el['invite-room-name'].textContent = roomName;
+    el['invite-search'].value = '';
+    el['invite-modal'].hidden = false;
+    el['invite-search'].focus();
+}
+
+export function closeInviteModal() {
+    el['invite-modal'].hidden = true;
+    el['invite-user-list'].innerHTML = '';
+}
+
+export function renderInviteUserList(users, onInvite) {
+    var list = el['invite-user-list'];
+    list.innerHTML = '';
+    users.forEach(function (user) {
+        var li = document.createElement('li');
+        var row = document.createElement('div');
+        row.className = 'action-item';
+
+        var label = document.createElement('span');
+        label.className = 'action-item-label';
+        label.textContent = user.displayName || user.firstName || 'usuário';
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn--ghost';
+        btn.textContent = 'Convidar';
+        btn.addEventListener('click', function () {
+            btn.disabled = true;
+            btn.textContent = 'Convidado';
+            onInvite(user);
+        });
+
+        row.appendChild(label);
+        row.appendChild(btn);
+        li.appendChild(row);
+        list.appendChild(li);
+    });
+    el['invite-user-empty'].hidden = users.length > 0;
 }
 
 export function renderNotice(text, kind) {

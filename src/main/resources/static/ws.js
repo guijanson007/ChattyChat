@@ -50,6 +50,19 @@ function onConnected() {
         }
     });
 
+    // Live push for new invites while connected. This only fires while the user is
+    // inside a room (STOMP only connects at that point) — the rooms screen's invite
+    // list is refreshed over REST instead, so nothing is missed while offline.
+    state.client.subscribe('/user/queue/invites', function (frame) {
+        var invite;
+        try {
+            invite = JSON.parse(frame.body);
+        } catch (e) {
+            return;
+        }
+        renderNotice('Novo convite para #' + invite.room + ' — confira na tela de salas.');
+    });
+
     subscribeToRoom(state.room);
 }
 

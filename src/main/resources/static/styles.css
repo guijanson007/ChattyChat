@@ -163,8 +163,49 @@ label { font-size: 13px; color: var(--ink-2); }
 .room-item:hover .go { opacity: 1; }
 .empty { padding: 8px 20px 20px; color: var(--ink-3); font-size: 14px; }
 
-.create { display: flex; gap: 8px; margin-top: 16px; }
+.create { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
 .create .input { flex: 1; }
+
+.checkbox {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%;
+    font-size: 13px; color: var(--ink-2);
+}
+.checkbox input { width: 16px; height: 16px; }
+
+.action-list { list-style: none; margin: 0; padding: 0 8px 8px; display: grid; gap: 2px; }
+.action-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--r-md);
+}
+.action-item:hover { background: #f7f7f8; }
+.action-item-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 500;
+    overflow-wrap: anywhere;
+}
+.action-item-buttons { display: flex; gap: 6px; flex: none; }
+
+.modal-overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: rgba(23, 23, 26, .35);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+}
+.modal-overlay[hidden] { display: none; }
+.modal-card {
+    width: 100%; max-width: 420px; max-height: 80vh;
+    display: flex; flex-direction: column; gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-md);
+    padding: 24px;
+    animation: rise .2s cubic-bezier(.2,.7,.3,1) both;
+    overflow-y: auto;
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
 /* ---------- chat ---------- */
 #screen-chat { flex-direction: column; }

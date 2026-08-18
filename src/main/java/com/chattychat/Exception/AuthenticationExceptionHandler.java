@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
 public class AuthenticationExceptionHandler {
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Object> handleAuthenticationException(AuthenticationException ex) {
+    @ExceptionHandler(OAuth2ProvisioningException.class)
+    public ResponseEntity<Object> handleAuthenticationException(OAuth2ProvisioningException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
     }
 }

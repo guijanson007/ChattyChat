@@ -2,7 +2,18 @@ import {API, API_BASE} from './config.js';
 import {$, el, state} from './state.js';
 import {apiFetch, normalizeRooms} from './api.js';
 import {connect, disconnect, sendMessage, subscribeToRoom} from './ws.js';
-import {renderMessage, renderNotice, renderRoomList, setHint, showScreen} from './ui.js';
+import {
+    closeInviteModal,
+    openInviteModal,
+    renderDiscoverRooms,
+    renderInvites,
+    renderInviteUserList,
+    renderMessage,
+    renderNotice,
+    renderRoomList,
+    setHint,
+    showScreen
+} from './ui.js';
 import {formatCreatedAt, initials, loadName, sanitizeRoom} from './utils.js';
 
 function showLoginScreen() {
@@ -69,6 +80,8 @@ function showRoomSelection() {
     el['input-room'].value = '';
     setHint(el['hint-room'], '');
     loadRoomsFromServer();
+    loadDiscoverRooms();
+    loadInvites();
 }
 
 function loadRoomsFromServer() {
@@ -94,6 +107,69 @@ function loadRoomsFromServer() {
         });
 }
 
+function loadDiscoverRooms() {
+    apiFetch(API.discoverRooms, {method: 'GET'})
+        .then(function (rooms) {
+            state.discoverRooms = normalizeRooms(rooms);
+            renderDiscoverRooms(state.discoverRooms, handleRegisterRoom);
+        })
+        .catch(function () {
+            // Discover is a nice-to-have on this screen; fail quietly rather than
+            // blocking the room list if the endpoint isn't available yet.
+            state.discoverRooms = [];
+            renderDiscoverRooms([], handleRegisterRoom);
+        });
+}
+
+function handleRegisterRoom(room, btn) {
+    if (btn) btn.disabled = true;
+    apiFetch(API.registerRoom(room), {method: 'POST'})
+        .then(function () {
+            renderNotice('Você entrou em #' + room + '.');
+            loadRoomsFromServer();
+            loadDiscoverRooms();
+        })
+        .catch(function (err) {
+            if (btn) btn.disabled = false;
+            setHint(el['hint-room'], 'Não foi possível entrar em #' + room + ': ' + err.message);
+        });
+}
+
+function loadInvites() {
+    apiFetch(API.invites, {method: 'GET'})
+        .then(function (invites) {
+            state.invites = Array.isArray(invites) ? invites : [];
+            renderInvites(state.invites, handleAcceptInvite, handleDeclineInvite);
+        })
+        .catch(function () {
+            state.invites = [];
+            renderInvites([], handleAcceptInvite, handleDeclineInvite);
+        });
+}
+
+function handleAcceptInvite(invite) {
+    apiFetch(API.acceptInvite(invite.id), {method: 'POST'})
+        .then(function () {
+            renderNotice('Você entrou em #' + invite.room + '.');
+            loadInvites();
+            loadRoomsFromServer();
+            loadDiscoverRooms();
+        })
+        .catch(function (err) {
+            setHint(el['hint-room'], 'Não foi possível aceitar o convite: ' + err.message);
+        });
+}
+
+function handleDeclineInvite(invite) {
+    apiFetch(API.declineInvite(invite.id), {method: 'POST'})
+        .then(function () {
+            loadInvites();
+        })
+        .catch(function (err) {
+            setHint(el['hint-room'], 'Não foi possível recusar o convite: ' + err.message);
+        });
+}
+
 function submitRoom(e) {
     e.preventDefault();
     var room = sanitizeRoom(el['input-room'].value);
@@ -109,7 +185,7 @@ function submitRoom(e) {
     apiFetch(API.rooms, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({name: room})
+        body: JSON.stringify({name: room, isPublic: el['input-room-open'].checked})
     }).then(function () {
         return apiFetch(API.rooms, {method: 'GET'});
     }).then(function (rooms) {
@@ -158,6 +234,51 @@ function loadHistory(room) {
         });
 }
 
+var inviteCandidates = [];
+
+function openInvite() {
+    if (!state.room) return;
+    openInviteModal(state.room);
+
+    Promise.all([
+        apiFetch(API.roomMembers(state.room), {method: 'GET'}).catch(function () { return []; }),
+        apiFetch(API.allUsers, {method: 'GET'}).catch(function () { return []; })
+    ]).then(function (results) {
+        var members = Array.isArray(results[0]) ? results[0] : [];
+        var users = Array.isArray(results[1]) ? results[1] : [];
+        var memberIds = members.map(function (m) { return m.id; });
+        inviteCandidates = users.filter(function (u) {
+            return u.id !== state.user.id && memberIds.indexOf(u.id) === -1;
+        });
+        renderInviteUserList(inviteCandidates, handleInviteUser);
+    });
+}
+
+function filterInviteCandidates() {
+    var q = el['invite-search'].value.trim().toLowerCase();
+    if (!q) {
+        renderInviteUserList(inviteCandidates, handleInviteUser);
+        return;
+    }
+    var filtered = inviteCandidates.filter(function (u) {
+        var name = (u.displayName || u.firstName || '').toLowerCase();
+        return name.indexOf(q) !== -1;
+    });
+    renderInviteUserList(filtered, handleInviteUser);
+}
+
+function handleInviteUser(user) {
+    apiFetch(API.roomInvites(state.room), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({invitedUserId: user.id})
+    }).then(function () {
+        setHint(el['hint-invite'], '');
+    }).catch(function (err) {
+        setHint(el['hint-invite'], 'Não foi possível convidar: ' + err.message);
+    });
+}
+
 function handleSendMessage(e) {
     if (e) e.preventDefault();
     var content = el['input-msg'].value.trim();
@@ -172,8 +293,11 @@ function handleSendMessage(e) {
 function cacheEls() {
     ['screen-login', 'screen-name', 'screen-rooms', 'screen-chat', 'form-name', 'input-name', 'hint-name',
         'btn-name', 'avatar', 'who-name', 'btn-change-name', 'room-list', 'rooms-empty',
-        'form-room', 'input-room', 'hint-room', 'btn-back', 'chat-title', 'chat-meta',
-        'status', 'status-text', 'messages', 'form-msg', 'input-msg', 'btn-send']
+        'form-room', 'input-room', 'input-room-open', 'hint-room', 'btn-back', 'chat-title', 'chat-meta',
+        'status', 'status-text', 'messages', 'form-msg', 'input-msg', 'btn-send',
+        'invites-panel', 'invite-list', 'discover-list', 'discover-empty',
+        'btn-invite', 'invite-modal', 'invite-room-name', 'invite-search',
+        'invite-user-list', 'invite-user-empty', 'hint-invite', 'btn-close-invite']
         .forEach(function (id) {
             el[id] = $(id);
         });
@@ -186,6 +310,9 @@ function bindEvents() {
     el['form-room'].addEventListener('submit', submitRoom);
     el['btn-back'].addEventListener('click', showRoomSelection);
     el['form-msg'].addEventListener('submit', handleSendMessage);
+    el['btn-invite'].addEventListener('click', openInvite);
+    el['btn-close-invite'].addEventListener('click', closeInviteModal);
+    el['invite-search'].addEventListener('input', filterInviteCandidates);
     window.addEventListener('beforeunload', disconnect);
 }
 

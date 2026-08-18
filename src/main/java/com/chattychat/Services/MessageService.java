@@ -4,6 +4,7 @@ import com.chattychat.Entities.ChatMessage;
 import com.chattychat.Entities.Room;
 import com.chattychat.Entities.User;
 import com.chattychat.Exception.InvalidRoomException;
+import com.chattychat.Exception.InvalidUserException;
 import com.chattychat.Repositories.MessageRepository;
 import com.chattychat.Repositories.RoomRepository;
 import com.chattychat.Repositories.UserRepository;
@@ -31,9 +32,9 @@ public class MessageService {
 
     public OutboundMessageDTO save(String roomName, UUID senderId, InboundMessageDTO incoming) {
         User sender = userRepository.findById(senderId)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown user id: " + senderId));
+                .orElseThrow(() -> new InvalidUserException("Unknown user id: " + senderId));
         Room room = roomRepository.findByName(roomName)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown room: " + roomName));
+                .orElseThrow(() -> new InvalidRoomException("Unknown room: " + roomName));
 
         ChatMessage saved = messageRepository.save(
                 new ChatMessage(sender, room, incoming.content(), LocalDateTime.now())

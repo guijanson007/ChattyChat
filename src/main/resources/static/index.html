@@ -71,15 +71,30 @@
             <button class="btn btn--ghost" id="btn-change-name" type="button">Trocar nome</button>
         </div>
 
+        <div class="panel" id="invites-panel" hidden>
+            <div class="panel-title">Convites pendentes</div>
+            <ul class="action-list" id="invite-list"></ul>
+        </div>
+
         <div class="panel">
-            <div class="panel-title">Salas</div>
+            <div class="panel-title">Minhas salas</div>
             <ul class="room-list" id="room-list"></ul>
-            <p class="empty" id="rooms-empty" hidden>Nenhuma sala ainda. Crie a primeira abaixo.</p>
+            <p class="empty" id="rooms-empty" hidden>Você ainda não está em nenhuma sala.</p>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Salas abertas para entrar</div>
+            <ul class="action-list" id="discover-list"></ul>
+            <p class="empty" id="discover-empty" hidden>Nenhuma sala aberta no momento.</p>
         </div>
 
         <form class="create" id="form-room" novalidate>
             <input class="input" id="input-room" placeholder="Nova sala (ex.: geral)" maxlength="32"
                    spellcheck="false"/>
+            <label class="checkbox">
+                <input type="checkbox" id="input-room-open" checked/>
+                Sala aberta — qualquer pessoa pode entrar
+            </label>
             <button class="btn" type="submit">Criar e entrar</button>
         </form>
         <p class="hint" id="hint-room" role="alert"></p>
@@ -98,6 +113,7 @@
                 <div class="chat-title" id="chat-title"># sala</div>
                 <div class="chat-meta" id="chat-meta">—</div>
             </div>
+            <button class="btn btn--ghost" id="btn-invite" type="button">Convidar</button>
             <div class="status" id="status" data-state="offline" aria-live="polite">
                 <span class="dot"></span><span id="status-text">offline</span>
             </div>
@@ -112,6 +128,20 @@
         </form>
     </div>
 </section>
+
+<!-- ============ invite modal ============ -->
+<div class="modal-overlay" id="invite-modal" hidden>
+    <div class="modal-card">
+        <div class="modal-head">
+            <div class="panel-title" style="padding:0;">Convidar para # <span id="invite-room-name"></span></div>
+            <button class="btn btn--icon btn--ghost" id="btn-close-invite" type="button" aria-label="Fechar">&#10005;</button>
+        </div>
+        <input class="input" id="invite-search" placeholder="Buscar por nome…" autocomplete="off"/>
+        <ul class="action-list" id="invite-user-list"></ul>
+        <p class="empty" id="invite-user-empty" hidden>Nenhum usuário encontrado.</p>
+        <p class="hint" id="hint-invite" role="alert"></p>
+    </div>
+</div>
 
 <!-- libs (CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>

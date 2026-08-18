@@ -2,7 +2,7 @@ import {STORE} from './config.js';
 
 export function loadUserId() {
     try {
-        return localStorage.getItem(STORE.userId) || null;
+        return localStorage.getItem(STORE.id) || null;
     } catch (e) {
         return null;
     }
@@ -10,7 +10,7 @@ export function loadUserId() {
 
 export function saveUserId(v) {
     try {
-        localStorage.setItem(STORE.userId, v);
+        localStorage.setItem(STORE.id, v);
     } catch (e) {
     }
 }

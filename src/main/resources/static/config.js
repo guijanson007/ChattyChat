@@ -13,5 +13,5 @@ export const DEST = (room) => '/app/chat.send/' + room;
 
 export const STORE = {
     name: 'arichat.name',
-    userId: 'arichat.userId'
+    id: 'arichat.id'
 };

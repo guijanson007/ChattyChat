@@ -3,7 +3,7 @@ import {$, el, state} from './state.js';
 import {apiFetch, normalizeRooms} from './api.js';
 import {connect, disconnect, sendMessage, subscribeToRoom} from './ws.js';
 import {renderMessage, renderNotice, renderRoomList, setHint, showScreen} from './ui.js';
-import {formatSentAt, initials, loadName, sanitizeRoom} from './utils.js';
+import {formatCreatedAt, initials, loadName, sanitizeRoom} from './utils.js';
 
 function showLoginScreen() {
     showScreen('screen-login');
@@ -143,7 +143,7 @@ function loadHistory(room) {
                     senderId: m.senderId || null,
                     from: m.from || 'anon',
                     content: m.content || '',
-                    createdAt: formatSentAt(m.sentAt)
+                    createdAt: formatCreatedAt(m.createdAt)
                 });
             });
         })

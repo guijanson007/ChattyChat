@@ -1,6 +1,7 @@
 package com.chattychat.Controller;
 
 import com.chattychat.Services.RoomService;
+import com.chattychat.dto.AuthUser;
 import com.chattychat.dto.RoomDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -52,10 +54,26 @@ public class RoomController {
     })
     @PostMapping
     public ResponseEntity<RoomDTO> createRoom(
-            @RequestBody @Valid RoomDTO room
+            @RequestBody @Valid RoomDTO room,
+            @AuthenticationPrincipal AuthUser authUser
     ) {
         RoomDTO createdRoom = roomService.createRoom(room);
+        roomService.joinRoom(createdRoom.name(), authUser.userId());
         return ResponseEntity.created(URI.create("/v1/rooms/" + createdRoom.id()))
                 .body(createdRoom);
+    }
+
+    @Operation(summary = "Join Room", description = "Join an existing room.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully joined the room"),
+            @ApiResponse(responseCode = "404", description = "Room or user not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access")
+    })
+    @PostMapping("/{roomName}/members")
+    public ResponseEntity<Void> joinRoom(
+            @PathVariable String roomName,
+            @AuthenticationPrincipal AuthUser authUser) {
+        roomService.joinRoom(roomName, authUser.userId());
+        return ResponseEntity.ok().build();
     }
 }

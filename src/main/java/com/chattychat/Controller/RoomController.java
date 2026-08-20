@@ -38,8 +38,8 @@ public class RoomController {
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
     @GetMapping
-    public ResponseEntity<List<RoomDTO>> getAllRooms(@AuthenticationPrincipal AuthUser authUser) {
-        return ResponseEntity.ok(roomService.getAllRooms(authUser.getUserId()));
+    public ResponseEntity<List<RoomDTO>> getAllSubscribedRooms(@AuthenticationPrincipal AuthUser authUser) {
+        return ResponseEntity.ok(roomService.getAllSubscribedRooms(authUser.getUserId()));
     }
 
     @Operation(summary = "Create Room", description = "Create a new room.")
@@ -75,5 +75,20 @@ public class RoomController {
             @AuthenticationPrincipal AuthUser authUser) {
         roomService.joinRoom(roomName, authUser.userId());
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Discover Public Rooms", description = "Retrieve a list of public rooms that the user has not joined yet.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully retrieved list of public rooms",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = RoomDTO.class)))
+            ),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access")
+    })
+
+    @GetMapping("/discover")
+    public ResponseEntity<List<RoomDTO>> discover(@AuthenticationPrincipal AuthUser authUser) {
+        return ResponseEntity.ok(roomService.getPublicRoomsNotJoined(authUser.getUserId()));
     }
 }

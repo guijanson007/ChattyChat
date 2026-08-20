@@ -26,7 +26,7 @@ public class RoomService {
         this.userRepository = userRepository;
     }
 
-    public List<RoomDTO> getAllRooms(UUID userId) {
+    public List<RoomDTO> getAllSubscribedRooms(UUID userId) {
         return roomRepository.findAllByUserId(userId)
                 .stream()
                 .map(Room::toDTO)
@@ -44,5 +44,12 @@ public class RoomService {
                 .orElseThrow(() -> new InvalidUserException("User not found"));
 
         roomMemberRepository.save(new RoomMember(user, room));
+    }
+
+    public List<RoomDTO> getPublicRoomsNotJoined(UUID userId) {
+        return roomRepository.findAllByIsPublicNotJoined(userId)
+                .stream()
+                .map(Room::toDTO)
+                .toList();
     }
 }

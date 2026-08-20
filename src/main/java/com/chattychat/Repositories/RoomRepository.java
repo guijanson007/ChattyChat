@@ -17,5 +17,16 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
     @Query("SELECT r FROM Room r JOIN RoomMember rm ON rm.id.roomId = r.id WHERE rm.id.userId = :userId")
     List<Room> findAllByUserId(@Param("userId") UUID userId);
 
+    @Query("""
+    SELECT r FROM Room r
+    WHERE r.isPublic = true
+      AND NOT EXISTS (
+          SELECT 1 FROM RoomMember rm
+          WHERE rm.id.roomId = r.id
+            AND rm.id.userId = :userId
+      )
+    """)
+    List<Room> findAllByIsPublicNotJoined(@Param("userId") UUID userId);
+
     boolean existsByName(String name);
 }

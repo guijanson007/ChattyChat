@@ -16,13 +16,17 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
+          script_stop: true
           script: |
-            set -e
+            set -ex
             cd /home/guilherme/ChattyChat
             
             echo "Fetching latest changes..."
             git fetch origin master
             git reset --hard origin/master
+            
+            echo "Ensuring gradlew is executable..."
+            chmod +x gradlew
             
             echo "Building application..."
             ./gradlew clean bootJar -x test

@@ -91,4 +91,17 @@ public class RoomController {
     public ResponseEntity<List<RoomDTO>> discover(@AuthenticationPrincipal AuthUser authUser) {
         return ResponseEntity.ok(roomService.getPublicRoomsNotJoined(authUser.getUserId()));
     }
+
+    @Operation(summary = "Self Register to Public Room", description = "Allows a user to self-register to a public room.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully registered to the public room"),
+            @ApiResponse(responseCode = "404", description = "Room or user not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access")
+    })
+    @PostMapping("/{room}/members")
+    public ResponseEntity<Void> selfRegister(@PathVariable String room, @AuthenticationPrincipal AuthUser authUser) {
+        roomService.joinPublicRoom(room, authUser.userId());
+        return ResponseEntity.ok().build();
+    }
+
 }

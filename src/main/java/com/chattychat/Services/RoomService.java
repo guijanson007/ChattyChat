@@ -52,4 +52,18 @@ public class RoomService {
                 .map(Room::toDTO)
                 .toList();
     }
+
+    public void joinPublicRoom(String roomName, UUID userId) {
+        Room room = roomRepository.findByName(roomName)
+                .orElseThrow(() -> new InvalidRoomException("Room not found"));
+
+        if (!room.isPublic()) {
+            throw new InvalidRoomException("Room is not public");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidUserException("User not found"));
+
+        roomMemberRepository.save(new RoomMember(user, room));
+    }
 }

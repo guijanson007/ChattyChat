@@ -9,6 +9,7 @@ import com.chattychat.Repositories.RoomMemberRepository;
 import com.chattychat.Repositories.RoomRepository;
 import com.chattychat.Repositories.UserRepository;
 import com.chattychat.dto.RoomDTO;
+import com.chattychat.dto.UserDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -65,5 +66,24 @@ public class RoomService {
                 .orElseThrow(() -> new InvalidUserException("User not found"));
 
         roomMemberRepository.save(new RoomMember(user, room));
+    }
+
+    public List<UserDTO> getRoomMembers(String roomName, UUID userId) {
+        Room room = roomRepository.findByName(roomName)
+                .orElseThrow(() -> new InvalidRoomException("Room not found"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidUserException("User not found"));
+
+        List<UserDTO> users = roomRepository.getAllMembers(room.getId())
+                .stream()
+                .map(User::toDTO)
+                .toList();
+
+        // Exclude the rooms the user is not a member
+        if (!users.contains(user.toDTO())) {
+            throw new InvalidUserException("User not belong to this room");
+        }
+        return users;
     }
 }

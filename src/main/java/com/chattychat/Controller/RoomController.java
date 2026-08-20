@@ -3,6 +3,7 @@ package com.chattychat.Controller;
 import com.chattychat.Services.RoomService;
 import com.chattychat.dto.AuthUser;
 import com.chattychat.dto.RoomDTO;
+import com.chattychat.dto.UserDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -102,6 +103,23 @@ public class RoomController {
     public ResponseEntity<Void> selfRegister(@PathVariable String room, @AuthenticationPrincipal AuthUser authUser) {
         roomService.joinPublicRoom(room, authUser.userId());
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Get Room Members", description = "Retrieve a list of members in a specific room.")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully retrieved list of room members",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserDTO.class)))
+            ),
+            @ApiResponse(responseCode = "404", description = "Room or user not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access")
+    })
+    @GetMapping("/{room}/members")
+    public ResponseEntity<List<UserDTO>> getRoomMembers(
+            @PathVariable String room,
+            @AuthenticationPrincipal AuthUser authUser) {
+        return ResponseEntity.ok(roomService.getRoomMembers(room, authUser.userId()));
     }
 
 }

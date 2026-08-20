@@ -1,6 +1,7 @@
 package com.chattychat.Repositories;
 
 import com.chattychat.Entities.Room;
+import com.chattychat.Entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +28,13 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
       )
     """)
     List<Room> findAllByIsPublicNotJoined(@Param("userId") UUID userId);
+
+    @Query("""
+    SELECT u FROM User u
+    JOIN RoomMember rm ON rm.id.userId = u.id
+    WHERE rm.id.roomId = :roomId
+    """)
+    List<User> getAllMembers(@Param("roomId") UUID roomId);
 
     boolean existsByName(String name);
 }

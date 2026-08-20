@@ -27,7 +27,7 @@ public class RoomService {
     }
 
     public List<RoomDTO> getAllRooms(UUID userId) {
-        return roomRepository.findAllAccessibleRooms(userId)
+        return roomRepository.findAllByUserId(userId)
                 .stream()
                 .map(Room::toDTO)
                 .toList();

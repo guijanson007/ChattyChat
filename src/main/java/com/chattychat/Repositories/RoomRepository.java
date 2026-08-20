@@ -14,12 +14,8 @@ import java.util.UUID;
 public interface RoomRepository extends JpaRepository<Room, UUID> {
     Optional<Room> findByName(String name);
 
-    @Query("""
-        SELECT DISTINCT r FROM Room r\s
-        LEFT JOIN RoomMember rm ON rm.id.roomId = r.id AND rm.id.userId = :userId
-        WHERE r.isPublic = true OR rm.id.userId IS NOT NULL
-   \s""")
-    List<Room> findAllAccessibleRooms(@Param("userId") UUID userId);
+    @Query("SELECT r FROM Room r JOIN RoomMember rm ON rm.id.roomId = r.id WHERE rm.id.userId = :userId")
+    List<Room> findAllByUserId(@Param("userId") UUID userId);
 
     boolean existsByName(String name);
 }

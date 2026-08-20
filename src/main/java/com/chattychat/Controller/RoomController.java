@@ -28,7 +28,7 @@ public class RoomController {
         this.roomService = roomService;
     }
 
-    @Operation(summary = "Get All Rooms", description = "Retrieve a list of all available rooms.")
+    @Operation(summary = "Get All Rooms", description = "Retrieve a list of all available rooms to the user.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -38,8 +38,8 @@ public class RoomController {
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
     @GetMapping
-    public ResponseEntity<List<RoomDTO>> getAllRooms() {
-        return ResponseEntity.ok(roomService.getAllRooms());
+    public ResponseEntity<List<RoomDTO>> getAllRooms(@AuthenticationPrincipal AuthUser authUser) {
+        return ResponseEntity.ok(roomService.getAllRooms(authUser.getUserId()));
     }
 
     @Operation(summary = "Create Room", description = "Create a new room.")

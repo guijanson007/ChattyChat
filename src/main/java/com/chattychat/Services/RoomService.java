@@ -26,10 +26,10 @@ public class RoomService {
         this.userRepository = userRepository;
     }
 
-    public List<RoomDTO> getAllRooms() {
-        return roomRepository.findAll()
+    public List<RoomDTO> getAllRooms(UUID userId) {
+        return roomRepository.findAllAccessibleRooms(userId)
                 .stream()
-                .map(room -> new RoomDTO(room.getId(), room.getName(), room.getCreatedAt(), room.isPublic()))
+                .map(Room::toDTO)
                 .toList();
     }
 

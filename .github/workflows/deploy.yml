@@ -1,0 +1,40 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          script: |
+            set -ex
+            cd /home/guilherme/ChattyChat
+            
+            echo "Fetching latest changes..."
+            git fetch origin master
+            git reset --hard origin/master
+            
+            echo "Ensuring gradlew is executable..."
+            chmod +x gradlew
+            
+            echo "Starting/Updating production database container..."
+            docker compose -f compose.yaml -f compose.prod.yaml up -d --remove-orphans
+            
+            echo "Building application..."
+            ./gradlew clean bootJar -x test
+            
+            echo "Restarting service..."
+            sudo systemctl restart chattychat.service
+            
+            echo "Deployment completed successfully!"

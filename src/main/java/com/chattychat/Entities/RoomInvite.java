@@ -1,5 +1,6 @@
 package com.chattychat.Entities;
 
+import com.chattychat.dto.RoomInviteDTO;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,22 +20,40 @@ public class RoomInvite {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "room_id")
     private Room room;
 
-    private String email;
+    @ManyToOne
+    @JoinColumn(name = "inviter_id")
+    private User inviter;
+
+    @ManyToOne
+    @JoinColumn(name = "invitee_id")
+    private User invitee;
+
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
 
-    public RoomInvite(Room room, String email) {
+    public RoomInvite(Room room, User inviter, User invitee) {
         this.room = room;
-        this.email = email;
+        this.inviter = inviter;
+        this.invitee = invitee;
     }
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         expiresAt = createdAt.plusDays(7); // Invite expires in 7 days
+    }
+
+    public RoomInviteDTO toDTO() {
+        return new RoomInviteDTO(
+                id,
+                room.getName(),
+                inviter.toDTO(),
+                invitee.toDTO(),
+                createdAt,
+                expiresAt
+        );
     }
 
 }

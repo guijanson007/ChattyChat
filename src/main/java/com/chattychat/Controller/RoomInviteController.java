@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,9 +21,13 @@ import java.util.UUID;
 @Controller
 public class RoomInviteController {
     private final RoomInviteService roomInviteService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public RoomInviteController(RoomInviteService roomInviteService) {
+    public RoomInviteController(
+            RoomInviteService roomInviteService,
+            SimpMessagingTemplate messagingTemplate) {
         this.roomInviteService = roomInviteService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Operation(summary = "Create a room invite", description = "Creates an invite for a specific room. The authenticated user must have permission to create invites for the room.")
@@ -38,7 +43,14 @@ public class RoomInviteController {
             @AuthenticationPrincipal AuthUser authUser,
             @RequestBody UUID invitedUserId
     ) {
-        roomInviteService.createInvite(room, authUser.userId(), invitedUserId);
+        RoomInviteDTO createdInvite = roomInviteService.createInvite(room, authUser.userId(), invitedUserId);
+
+        // Push invite to the user's queue via the existing WS connection
+        messagingTemplate.convertAndSendToUser(
+                invitedUserId.toString(),
+                "/user/queue/invites",
+                createdInvite
+        );
         return ResponseEntity.ok().build();
     }
 
@@ -81,4 +93,5 @@ public class RoomInviteController {
         roomInviteService.declineInvite(id, authUser.getUserId());
         return ResponseEntity.ok().build();
     }
+
 }

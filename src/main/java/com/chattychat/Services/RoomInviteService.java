@@ -33,7 +33,7 @@ public class RoomInviteService {
     }
 
 
-    public void createInvite(String room, UUID inviterId, UUID inviteeId) {
+    public RoomInviteDTO createInvite(String room, UUID inviterId, UUID inviteeId) {
         if (inviterId.equals(inviteeId)) {
             throw new InvalidInviteException("You may not invite yourself");
         }
@@ -51,7 +51,7 @@ public class RoomInviteService {
             throw new InvalidInviteException("The inviter is not a member of the room");
         }
 
-        roomInviteRepository.save(new RoomInvite(roomObj, inviterObj, inviteeObj));
+       return roomInviteRepository.save(new RoomInvite(roomObj, inviterObj, inviteeObj)).toDTO();
     }
 
     public List<RoomInviteDTO> getInvitesForUser(UUID userId) {

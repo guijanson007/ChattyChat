@@ -68,8 +68,7 @@ public class RoomInviteService {
                 .orElseThrow(() -> new InvalidInviteException("Invite not found"));
 
         // 2. delete the invite
-        roomInviteRepository.deleteById(inviteId);
-        roomInviteRepository.flush();
+
 
         // 3. find the user
         User userObj = userRepository.findById(userId)
@@ -77,5 +76,16 @@ public class RoomInviteService {
 
         // 4. add the user to the room
         roomMemberRepository.save(new RoomMember(userObj, inviteObj.getRoom()));
+    }
+
+    public void declineInvite(UUID inviteId, UUID userId) {
+        RoomInvite inviteObj = roomInviteRepository.findById(inviteId)
+                .orElseThrow(() -> new InvalidInviteException("Invite not found"));
+
+        if (!inviteObj.getInvitee().getId().equals(userId)) {
+            throw new InvalidInviteException("You may not decline someone else's invite");
+        }
+        roomInviteRepository.deleteById(inviteId);
+        roomInviteRepository.flush();
     }
 }

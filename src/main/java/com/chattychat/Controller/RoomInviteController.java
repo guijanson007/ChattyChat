@@ -52,11 +52,33 @@ public class RoomInviteController {
         return ResponseEntity.ok(roomInviteService.getInvitesForUser(authUser.userId()));
     }
 
+    @Operation(summary = "Accept a room invite", description = "Accepts a room invite for the authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Invite accepted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid invite or user"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access"),
+            @ApiResponse(responseCode = "404", description = "Invite not found")
+    })
     @PostMapping("/v1/invites/{id}/accept")
     public ResponseEntity<?> acceptInvite(
             @PathVariable UUID id,
             @AuthenticationPrincipal AuthUser authUser) {
         roomInviteService.acceptInvite(id, authUser.getUserId());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Decline a room invite", description = "Declines a room invite for the authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Invite declined successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid invite or user"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access"),
+            @ApiResponse(responseCode = "404", description = "Invite not found")
+    })
+    @PostMapping("/v1/invites/{id}/decline")
+    public ResponseEntity<?> declineInvite(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal AuthUser authUser) {
+        roomInviteService.declineInvite(id, authUser.getUserId());
         return ResponseEntity.ok().build();
     }
 }

@@ -1,9 +1,6 @@
 package com.chattychat.Services;
 
-import com.chattychat.Entities.Room;
-import com.chattychat.Entities.RoomInvite;
-import com.chattychat.Entities.RoomMemberId;
-import com.chattychat.Entities.User;
+import com.chattychat.Entities.*;
 import com.chattychat.Exception.InvalidInviteException;
 import com.chattychat.Exception.InvalidRoomException;
 import com.chattychat.Exception.InvalidUserException;
@@ -12,6 +9,7 @@ import com.chattychat.Repositories.RoomMemberRepository;
 import com.chattychat.Repositories.RoomRepository;
 import com.chattychat.Repositories.UserRepository;
 import com.chattychat.dto.RoomInviteDTO;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -61,5 +59,23 @@ public class RoomInviteService {
                 .stream()
                 .map(RoomInvite::toDTO)
                 .toList();
+    }
+
+    @Transactional
+    public void acceptInvite(UUID inviteId, UUID userId) {
+        // 1. find the invite
+        RoomInvite inviteObj = roomInviteRepository.findById(inviteId)
+                .orElseThrow(() -> new InvalidInviteException("Invite not found"));
+
+        // 2. delete the invite
+        roomInviteRepository.deleteById(inviteId);
+        roomInviteRepository.flush();
+
+        // 3. find the user
+        User userObj = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidUserException("User not found"));
+
+        // 4. add the user to the room
+        roomMemberRepository.save(new RoomMember(userObj, inviteObj.getRoom()));
     }
 }

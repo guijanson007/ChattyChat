@@ -42,8 +42,21 @@ public class RoomInviteController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Get room invites for the authenticated user", description = "Retrieves a list of room invites for the authenticated user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved invites"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access")
+    })
     @GetMapping("/v1/invites")
     public ResponseEntity<List<RoomInviteDTO>> getInvites(@AuthenticationPrincipal AuthUser authUser) {
         return ResponseEntity.ok(roomInviteService.getInvitesForUser(authUser.userId()));
+    }
+
+    @PostMapping("/v1/invites/{id}/accept")
+    public ResponseEntity<?> acceptInvite(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal AuthUser authUser) {
+        roomInviteService.acceptInvite(id, authUser.getUserId());
+        return ResponseEntity.ok().build();
     }
 }

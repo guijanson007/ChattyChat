@@ -67,8 +67,12 @@ public class RoomInviteService {
         RoomInvite inviteObj = roomInviteRepository.findById(inviteId)
                 .orElseThrow(() -> new InvalidInviteException("Invite not found"));
 
-        // 2. delete the invite
-
+        // 2. check ownership and delete the invite
+        if (!inviteObj.getInvitee().getId().equals(userId)) {
+            throw new InvalidInviteException("You may not accept someone else's invite");
+        }
+        roomInviteRepository.deleteById(inviteId);
+        roomInviteRepository.flush();
 
         // 3. find the user
         User userObj = userRepository.findById(userId)

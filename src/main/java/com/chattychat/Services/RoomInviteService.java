@@ -47,7 +47,7 @@ public class RoomInviteService {
         User inviteeObj = userRepository.findById(inviteeId)
                 .orElseThrow(() -> new InvalidUserException("Invitee not found"));
 
-        if (roomMemberRepository.existsById(new RoomMemberId(inviterId, roomObj.getId()))) {
+        if (!roomMemberRepository.existsById(new RoomMemberId(inviterId, roomObj.getId()))) {
             throw new InvalidInviteException("The inviter is not a member of the room");
         }
 

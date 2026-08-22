@@ -48,7 +48,7 @@ public class RoomInviteController {
         // Push invite to the user's queue via the existing WS connection
         messagingTemplate.convertAndSendToUser(
                 invitedUserId.toString(),
-                "/user/queue/invites",
+                "/queue/invites",
                 createdInvite
         );
         return ResponseEntity.ok().build();

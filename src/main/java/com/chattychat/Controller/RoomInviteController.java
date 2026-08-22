@@ -30,9 +30,9 @@ public class RoomInviteController {
     @Operation(summary = "Create a room invite", description = "Creates an invite for a specific room. The authenticated user must have permission to create invites for the room.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Invite created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid room or user"),
+            @ApiResponse(responseCode = "403", description = "Invite is not allowed for the authenticated user"),
             @ApiResponse(responseCode = "401", description = "Unauthorized access"),
-            @ApiResponse(responseCode = "404", description = "User is not a member of the room")
+            @ApiResponse(responseCode = "404", description = "Room or user not found")
     })
     @PostMapping("/v1/rooms/{room}/invites")
     public ResponseEntity<?> createInvite(

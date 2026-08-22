@@ -3,7 +3,7 @@ export const state = {
     room: null,
     rooms: [], // room names the current user is a member of
     discoverRooms: [], // open room names not yet joined
-    invites: [], // pending invites for the current user: { id, room, invitedBy }
+    invites: [], // pending RoomInviteDTOs for the current user: { id, roomName, inviter, invitee, createdAt, expiresAt }
     roomMembers: [], // member UserDTOs of the room currently open in the invite modal
     client: null,
     subscription: null,

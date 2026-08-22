@@ -150,7 +150,7 @@ function loadInvites() {
 function handleAcceptInvite(invite) {
     apiFetch(API.acceptInvite(invite.id), {method: 'POST'})
         .then(function () {
-            renderNotice('Você entrou em #' + invite.room + '.');
+            renderNotice('Você entrou em #' + invite.roomName + '.');
             loadInvites();
             loadRoomsFromServer();
             loadDiscoverRooms();

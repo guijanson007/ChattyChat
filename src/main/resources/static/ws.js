@@ -60,7 +60,7 @@ function onConnected() {
         } catch (e) {
             return;
         }
-        renderNotice('Novo convite para #' + invite.room + ' — confira na tela de salas.');
+        renderNotice('Novo convite para #' + invite.roomName + ' — confira na tela de salas.');
     });
 
     subscribeToRoom(state.room);

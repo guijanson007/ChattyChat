@@ -7,5 +7,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface RoomInviteRepository extends JpaRepository<RoomInvite, UUID> {
-    List<RoomInvite> findAllByInviteeId(UUID inviteeId);
+    List<RoomInvite> findAllByInvitee_Id(UUID inviteeId);
 }

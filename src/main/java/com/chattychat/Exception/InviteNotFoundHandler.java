@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
-public class RoomInviteExceptionHandler {
-    @ExceptionHandler(InvalidInviteException.class)
-    public ResponseEntity<Object> handleInvalidInviteException(InvalidInviteException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+public class InviteNotFoundHandler {
+    @ExceptionHandler(InviteNotFoundException.class)
+    public ResponseEntity<Object> handleInviteNotFound(InviteNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 }

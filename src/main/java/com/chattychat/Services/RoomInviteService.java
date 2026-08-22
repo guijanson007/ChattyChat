@@ -4,6 +4,7 @@ import com.chattychat.Entities.*;
 import com.chattychat.Exception.InvalidInviteException;
 import com.chattychat.Exception.InvalidRoomException;
 import com.chattychat.Exception.InvalidUserException;
+import com.chattychat.Exception.InviteNotFoundException;
 import com.chattychat.Repositories.RoomInviteRepository;
 import com.chattychat.Repositories.RoomMemberRepository;
 import com.chattychat.Repositories.RoomRepository;
@@ -55,7 +56,7 @@ public class RoomInviteService {
     }
 
     public List<RoomInviteDTO> getInvitesForUser(UUID userId) {
-        return roomInviteRepository.findAllByInviteeId(userId)
+        return roomInviteRepository.findAllByInvitee_Id(userId)
                 .stream()
                 .map(RoomInvite::toDTO)
                 .toList();
@@ -65,7 +66,7 @@ public class RoomInviteService {
     public void acceptInvite(UUID inviteId, UUID userId) {
         // 1. find the invite
         RoomInvite inviteObj = roomInviteRepository.findById(inviteId)
-                .orElseThrow(() -> new InvalidInviteException("Invite not found"));
+                .orElseThrow(() -> new InviteNotFoundException("Invite not found"));
 
         // 2. check ownership and delete the invite
         if (!inviteObj.getInvitee().getId().equals(userId)) {
@@ -84,7 +85,7 @@ public class RoomInviteService {
 
     public void declineInvite(UUID inviteId, UUID userId) {
         RoomInvite inviteObj = roomInviteRepository.findById(inviteId)
-                .orElseThrow(() -> new InvalidInviteException("Invite not found"));
+                .orElseThrow(() -> new InviteNotFoundException("Invite not found"));
 
         if (!inviteObj.getInvitee().getId().equals(userId)) {
             throw new InvalidInviteException("You may not decline someone else's invite");

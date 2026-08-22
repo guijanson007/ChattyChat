@@ -2,6 +2,7 @@ package com.chattychat.Controller;
 
 import com.chattychat.Services.RoomInviteService;
 import com.chattychat.dto.AuthUser;
+import com.chattychat.dto.CreateInviteRequestDTO;
 import com.chattychat.dto.RoomInviteDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -41,13 +42,13 @@ public class RoomInviteController {
     public ResponseEntity<?> createInvite(
             @PathVariable String room,
             @AuthenticationPrincipal AuthUser authUser,
-            @RequestBody UUID invitedUserId
+            @RequestBody CreateInviteRequestDTO inviteRequestDTO
     ) {
-        RoomInviteDTO createdInvite = roomInviteService.createInvite(room, authUser.userId(), invitedUserId);
+        RoomInviteDTO createdInvite = roomInviteService.createInvite(room, authUser.userId(), inviteRequestDTO.invitedUserId());
 
         // Push invite to the user's queue via the existing WS connection
         messagingTemplate.convertAndSendToUser(
-                invitedUserId.toString(),
+                inviteRequestDTO.invitedUserId().toString(),
                 "/queue/invites",
                 createdInvite
         );

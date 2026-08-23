@@ -37,3 +37,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Node / frontend tooling ###
+node_modules/

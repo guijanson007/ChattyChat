@@ -1,8 +1,23 @@
 name: Deploy to VPS
 
+# Called by workflow.yaml after the CI job succeeds — NOT triggered directly by a
+# push. Pushing to master runs "Continuous integration", and only a green run
+# reaches this workflow. There is deliberately no `on: push` here; adding one back
+# would restore the old behaviour where a red build still deployed.
 on:
-  push:
-    branches: [ master ]
+  workflow_call:
+    inputs:
+      sha:
+        description: 'Exact commit SHA that CI validated, and that will be deployed.'
+        required: true
+        type: string
+
+# Never let two deploys overlap. cancel-in-progress is false on purpose: killing a
+# half-finished deploy (mid gradle build, or between build and systemctl restart)
+# leaves the VPS in a worse state than letting it finish.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -20,21 +35,24 @@ jobs:
           script: |
             set -ex
             cd /home/guilherme/ChattyChat
-            
+
             echo "Fetching latest changes..."
             git fetch origin master
-            git reset --hard origin/master
-            
+            # Reset to the exact SHA CI tested, not to whatever origin/master points at
+            # now. Without this, two pushes in quick succession can make the first
+            # deploy ship the second commit's code — untested by the run that allowed it.
+            git reset --hard ${{ inputs.sha }}
+
             echo "Ensuring gradlew is executable..."
             chmod +x gradlew
-            
+
             echo "Starting/Updating production database container..."
             docker compose -f compose.yaml -f compose.prod.yaml up -d --remove-orphans
-            
+
             echo "Building application..."
             ./gradlew clean bootJar -x test
-            
+
             echo "Restarting service..."
             sudo systemctl restart chattychat.service
-            
+
             echo "Deployment completed successfully!"

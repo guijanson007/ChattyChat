@@ -49,6 +49,8 @@ public class UserService {
     public UserDTO deleteUser(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new InvalidUserException("User not found"));
+
+
         userRepository.delete(user);
         return user.toDTO();
     }

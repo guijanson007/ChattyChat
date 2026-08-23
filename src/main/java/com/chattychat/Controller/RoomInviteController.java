@@ -5,6 +5,9 @@ import com.chattychat.dto.AuthUser;
 import com.chattychat.dto.CreateInviteRequestDTO;
 import com.chattychat.dto.RoomInviteDTO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +56,11 @@ public class RoomInviteController {
 
     @Operation(summary = "Get room invites for the authenticated user", description = "Retrieves a list of room invites for the authenticated user.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved invites"),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully retrieved invites",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = RoomInviteDTO.class)))
+            ),
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
     @GetMapping("/v1/invites")

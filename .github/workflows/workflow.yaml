@@ -26,6 +26,17 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    env:
+      SPRING_PROFILES_ACTIVE: test
+      TEST_DB_URL: jdbc:postgresql://localhost:5432/ci_chattychat
+      DB_USERNAME: ci_user
+      DB_PASSWORD: ci_password
+      # Dummy values so the OAuth client config resolves and the context loads.
+      GOOGLE_CLIENT_ID: dummy_google_id
+      GOOGLE_CLIENT_SECRET: dummy_google_secret
+      GITHUB_CLIENT_ID: dummy_github_id
+      GITHUB_CLIENT_SECRET: dummy_github_secret
+
     steps:
       - uses: actions/checkout@v4
 
@@ -36,18 +47,71 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Install frontend tooling
+        run: npm ci
+
+      - name: Type-check the frontend
+        run: npm run typecheck
+
       - name: Build and Test with Gradle
-        env:
-          # Map the runner's environment variables to the Postgres service above
-          DB_URL: jdbc:postgresql://localhost:5432/ci_chattychat
-          DB_USERNAME: ci_user
-          DB_PASSWORD: ci_password
-          # Provide dummy values for OAuth so the context loads without crashing
-          GOOGLE_CLIENT_ID: dummy_google_id
-          GOOGLE_CLIENT_SECRET: dummy_google_secret
-          GITHUB_CLIENT_ID: dummy_github_id
-          GITHUB_CLIENT_SECRET: dummy_github_secret
         run: ./gradlew build
+
+      # ---- OpenAPI type drift check -------------------------------------------------
+      # The committed frontend-types/api.d.ts is generated from the springdoc spec.
+      # springdoc builds that spec at runtime from the live handler mappings, so there
+      # is no static-analysis shortcut: the app has to actually boot.
+      - name: Start the application
+        env:
+          SWAGGER_ENABLED: 'true'
+        run: |
+          JAR=$(ls build/libs/*.jar | head -n1)
+          echo "Starting $JAR"
+          java -jar "$JAR" > /tmp/app.log 2>&1 &
+          echo $! > /tmp/app.pid
+
+      - name: Wait for /api-docs
+        run: |
+          curl -sSf --retry 60 --retry-delay 2 --retry-connrefused \
+            -o /dev/null http://localhost:8080/api-docs \
+            || { echo "::error::App never served /api-docs"; tail -100 /tmp/app.log; exit 1; }
+
+      - name: Check generated API types are up to date
+        run: |
+          npm run gen:api
+          git diff --exit-code -- frontend-types/api.d.ts || {
+            echo "::error::frontend-types/api.d.ts is out of date with the backend API."
+            echo "Run the app locally with SWAGGER_ENABLED=true, then 'npm run gen:api', and commit the result."
+            exit 1
+          }
+
+      - name: Stop the application
+        if: always()
+        run: kill "$(cat /tmp/app.pid)" 2>/dev/null || true
+
+      - name: Upload application log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-log
+          path: /tmp/app.log
+          if-no-files-found: ignore
+
+  # Gate: this only runs if `continuous-integration` above succeeded. It is also
+  # guarded to real pushes on master, because this workflow runs on pull_request
+  # too — without the `if`, every PR would deploy to production.
+  deploy:
+    needs: continuous-integration
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      sha: ${{ github.sha }}
+    secrets: inherit

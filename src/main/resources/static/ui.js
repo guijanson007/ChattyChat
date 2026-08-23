@@ -1,15 +1,32 @@
+// @ts-check
+
 import { state, el } from './state.js';
 
+/**
+ * @typedef {import('@api').UserDTO} UserDTO
+ * @typedef {import('@api').RoomInviteDTO} RoomInviteDTO
+ * @typedef {import('@api').OutboundMessageDTO} OutboundMessageDTO
+ */
+
+/** @param {string} id */
 export function showScreen(id) {
     ['screen-login', 'screen-name', 'screen-rooms', 'screen-chat'].forEach(function (s) {
         el[s].classList.toggle('is-active', s === id);
     });
 }
 
+/**
+ * @param {HTMLElement} node
+ * @param {string} [msg]
+ */
 export function setHint(node, msg) {
     node.textContent = msg || '';
 }
 
+/**
+ * @param {string} stateName
+ * @param {string} text
+ */
 export function setStatus(stateName, text) {
     el.status.setAttribute('data-state', stateName);
     el['status-text'].textContent = text;
@@ -20,11 +37,13 @@ export function isAtBottom() {
     return m.scrollHeight - m.scrollTop - m.clientHeight < 80;
 }
 
+/** @param {boolean} [force] */
 export function scrollToLatest(force) {
     var m = el.messages;
     if (force || isAtBottom()) m.scrollTop = m.scrollHeight;
 }
 
+/** @param {(room: string) => void} onJoinRoom */
 export function renderRoomList(onJoinRoom) {
     var list = el['room-list'];
     list.innerHTML = '';
@@ -34,7 +53,8 @@ export function renderRoomList(onJoinRoom) {
         btn.type = 'button';
         btn.className = 'room-item';
         btn.innerHTML = '<span class="hash">#</span><span class="rn"></span><span class="go">&#8594;</span>';
-        btn.querySelector('.rn').textContent = room;
+        // Cast: .rn was just written by the innerHTML above, so it always exists.
+        /** @type {HTMLElement} */ (btn.querySelector('.rn')).textContent = room;
         btn.addEventListener('click', function () { onJoinRoom(room); });
         li.appendChild(btn);
         list.appendChild(li);
@@ -42,6 +62,7 @@ export function renderRoomList(onJoinRoom) {
     el['rooms-empty'].hidden = state.rooms.length > 0;
 }
 
+/** @param {OutboundMessageDTO} msg */
 export function renderMessage(msg) {
     var mine = !!(state.user && msg.senderId && msg.senderId === state.user.id);
     var stick = isAtBottom() || mine;
@@ -70,6 +91,10 @@ export function renderMessage(msg) {
     scrollToLatest(stick);
 }
 
+/**
+ * @param {string[]} rooms
+ * @param {(room: string, btn: HTMLButtonElement) => void} onRegister
+ */
 export function renderDiscoverRooms(rooms, onRegister) {
     var list = el['discover-list'];
     list.innerHTML = '';
@@ -100,6 +125,11 @@ export function renderDiscoverRooms(rooms, onRegister) {
     el['discover-empty'].hidden = rooms.length > 0;
 }
 
+/**
+ * @param {RoomInviteDTO[]} invites
+ * @param {(invite: RoomInviteDTO) => void} onAccept
+ * @param {(invite: RoomInviteDTO) => void} onDecline
+ */
 export function renderInvites(invites, onAccept, onDecline) {
     var list = el['invite-list'];
     list.innerHTML = '';
@@ -141,6 +171,7 @@ export function renderInvites(invites, onAccept, onDecline) {
     el['invites-panel'].hidden = invites.length === 0;
 }
 
+/** @param {string} roomName */
 export function openInviteModal(roomName) {
     el['invite-room-name'].textContent = roomName;
     el['invite-search'].value = '';
@@ -153,6 +184,10 @@ export function closeInviteModal() {
     el['invite-user-list'].innerHTML = '';
 }
 
+/**
+ * @param {UserDTO[]} users
+ * @param {(user: UserDTO) => void} onInvite
+ */
 export function renderInviteUserList(users, onInvite) {
     var list = el['invite-user-list'];
     list.innerHTML = '';
@@ -183,6 +218,10 @@ export function renderInviteUserList(users, onInvite) {
     el['invite-user-empty'].hidden = users.length > 0;
 }
 
+/**
+ * @param {string} text
+ * @param {string} [kind]
+ */
 export function renderNotice(text, kind) {
     var stick = isAtBottom();
     var n = document.createElement('div');
@@ -195,6 +234,10 @@ export function renderNotice(text, kind) {
 
 // Renders an outgoing message immediately, before server confirmation, and returns
 // the DOM node so the caller can later transition it to sent/failed without a re-render.
+/**
+ * @param {string} content
+ * @returns {HTMLElement}
+ */
 export function renderPendingMessage(content) {
     var wrap = document.createElement('div');
     wrap.className = 'msg msg--mine msg--pending';
@@ -221,6 +264,7 @@ export function renderPendingMessage(content) {
     return wrap;
 }
 
+/** @param {HTMLElement} node */
 export function markNodePending(node) {
     node.classList.remove('msg--failed');
     node.classList.add('msg--pending');
@@ -229,6 +273,10 @@ export function markNodePending(node) {
     if (time) time.textContent = 'enviando…';
 }
 
+/**
+ * @param {HTMLElement} node
+ * @param {string} formattedSentAt
+ */
 export function markNodeSent(node, formattedSentAt) {
     node.classList.remove('msg--pending', 'msg--failed');
     node.onclick = null;
@@ -236,6 +284,10 @@ export function markNodeSent(node, formattedSentAt) {
     if (time) time.textContent = formattedSentAt;
 }
 
+/**
+ * @param {HTMLElement} node
+ * @param {() => void} onRetry
+ */
 export function markNodeFailed(node, onRetry) {
     node.classList.remove('msg--pending');
     node.classList.add('msg--failed');

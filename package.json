@@ -1,0 +1,15 @@
+{
+  "name": "chattychat-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Type-checking and OpenAPI type generation for the ChattyChat frontend. No build step: the browser loads src/main/resources/static/*.js directly.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "gen:api": "openapi-typescript http://localhost:8080/api-docs -o frontend-types/api.d.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.4",
+    "typescript": "^5.7.2"
+  }
+}

@@ -64,20 +64,6 @@ public class RoomController {
                 .body(createdRoom);
     }
 
-    @Operation(summary = "Join Room", description = "Join an existing room.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully joined the room"),
-            @ApiResponse(responseCode = "404", description = "Room or user not found"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized access")
-    })
-    @PostMapping("/{roomName}/members")
-    public ResponseEntity<Void> joinRoom(
-            @PathVariable String roomName,
-            @AuthenticationPrincipal AuthUser authUser) {
-        roomService.joinRoom(roomName, authUser.userId());
-        return ResponseEntity.ok().build();
-    }
-
     @Operation(summary = "Discover Public Rooms", description = "Retrieve a list of public rooms that the user has not joined yet.")
     @ApiResponses(value = {
             @ApiResponse(
@@ -87,7 +73,6 @@ public class RoomController {
             ),
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
-
     @GetMapping("/discover")
     public ResponseEntity<List<RoomDTO>> discover(@AuthenticationPrincipal AuthUser authUser) {
         return ResponseEntity.ok(roomService.getPublicRoomsNotJoined(authUser.getUserId()));

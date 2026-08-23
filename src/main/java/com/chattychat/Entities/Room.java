@@ -2,7 +2,6 @@ package com.chattychat.Entities;
 
 import com.chattychat.dto.RoomDTO;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,7 +13,6 @@ import java.util.UUID;
 @Getter
 @Setter
 @Table(name = "rooms")
-@AllArgsConstructor
 @NoArgsConstructor
 public class Room {
     @Id
@@ -29,7 +27,8 @@ public class Room {
         return new RoomDTO(id, name, createdAt, isPublic);
     }
 
-    public Room(String name) {
+    public Room(String name, boolean isPublic) {
+        this.isPublic = isPublic;
         this.name = name;
     }
 

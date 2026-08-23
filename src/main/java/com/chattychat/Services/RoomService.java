@@ -35,7 +35,7 @@ public class RoomService {
     }
 
     public RoomDTO createRoom(RoomDTO room) {
-        return roomRepository.save(new Room(room.name())).toDTO();
+        return roomRepository.save(new Room(room.name(), room.isPublic())).toDTO();
     }
 
     public void joinRoom(String roomName, UUID userId) {

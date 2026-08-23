@@ -1,6 +1,7 @@
 package com.chattychat.Controller;
 
 import com.chattychat.Services.MessageService;
+import com.chattychat.dto.AuthUser;
 import com.chattychat.dto.OutboundMessageDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,7 +40,9 @@ public class MessageRestController {
             @ApiResponse(responseCode = "401", description = "Unauthorized access")
     })
     @GetMapping("/{room}/messages")
-    public ResponseEntity<List<OutboundMessageDTO>> history(@PathVariable String room) {
-        return ResponseEntity.ok(messageService.history(room));
+    public ResponseEntity<List<OutboundMessageDTO>> history(
+            @PathVariable String room,
+            @AuthenticationPrincipal AuthUser authUser) {
+        return ResponseEntity.ok(messageService.history(room, authUser.getUserId()));
     }
 }

@@ -2,6 +2,7 @@ package com.chattychat.Services;
 
 import com.chattychat.Entities.User;
 import com.chattychat.Exception.InvalidUserException;
+import com.chattychat.Exception.UnauthenticatedUserException;
 import com.chattychat.Repositories.UserRepository;
 import com.chattychat.dto.UserDTO;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ public class UserService {
     public UserDTO getUserByProviderAndProviderId(String provider, String providerId) {
         return userRepository.findByProviderAndProviderId(provider, providerId)
                 .map(User::toDTO)
-                .orElseThrow(() -> new InvalidUserException("User not found"));
+                .orElseThrow(() -> new UnauthenticatedUserException("User not found"));
     }
 
     public UserDTO updateUserDisplayName(UUID userId, String newDisplayName) {

@@ -108,9 +108,11 @@ export function renderInvites(invites, onAccept, onDecline) {
         var row = document.createElement('div');
         row.className = 'action-item';
 
+        var inviterName = invite.inviter ? (invite.inviter.displayName || invite.inviter.firstName) : 'alguém';
+
         var label = document.createElement('span');
         label.className = 'action-item-label';
-        label.textContent = '#' + invite.room + ' — convite de ' + invite.invitedBy;
+        label.textContent = '#' + invite.roomName + ' — convite de ' + inviterName;
 
         var actions = document.createElement('div');
         actions.className = 'action-item-buttons';
@@ -119,14 +121,14 @@ export function renderInvites(invites, onAccept, onDecline) {
         accept.type = 'button';
         accept.className = 'btn btn--icon';
         accept.textContent = '✓';
-        accept.setAttribute('aria-label', 'Aceitar convite para #' + invite.room);
+        accept.setAttribute('aria-label', 'Aceitar convite para #' + invite.roomName);
         accept.addEventListener('click', function () { onAccept(invite); });
 
         var decline = document.createElement('button');
         decline.type = 'button';
         decline.className = 'btn btn--icon btn--ghost';
         decline.textContent = '✕';
-        decline.setAttribute('aria-label', 'Recusar convite para #' + invite.room);
+        decline.setAttribute('aria-label', 'Recusar convite para #' + invite.roomName);
         decline.addEventListener('click', function () { onDecline(invite); });
 
         actions.appendChild(accept);

@@ -6,6 +6,9 @@ servers:
   web:
     - 159.195.108.114
 
+ssh:
+  user: guilherme
+
 registry:
   server: ghcr.io
   username: guijanson007

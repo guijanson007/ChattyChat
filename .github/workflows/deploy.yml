@@ -3,7 +3,10 @@ name: Deploy via Kamal
 on:
   push:
     branches: [ master, kamal-deployment ]
-  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   deploy:

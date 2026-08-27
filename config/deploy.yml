@@ -1,6 +1,6 @@
 # config/deploy.yml
 service: chattychat
-image: ghcr.io/guijanson007/chattychat
+image: guijanson007/chattychat
 
 servers:
   web:

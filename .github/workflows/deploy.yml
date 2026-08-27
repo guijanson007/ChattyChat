@@ -2,7 +2,7 @@ name: Deploy via Kamal
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, kamal-deployment ]
   workflow_dispatch:
 
 jobs:

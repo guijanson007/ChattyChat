@@ -31,6 +31,7 @@ public class MessageWSController {
 
         Authentication auth = (Authentication) principal;
         AuthUser user = (AuthUser) auth.getPrincipal();   // get authUser
+        assert user != null;
         return messageService.save(roomName, user.getUserId(), msg);
     }
 

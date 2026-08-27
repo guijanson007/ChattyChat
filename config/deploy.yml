@@ -6,6 +6,12 @@ servers:
   web:
     - 159.195.108.114
 
+registry:
+  server: ghcr.io
+  username: guijanson007
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
 # Production Environment Variables injected by Kamal
 env:
   clear:

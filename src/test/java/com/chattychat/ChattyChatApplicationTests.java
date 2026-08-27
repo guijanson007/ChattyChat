@@ -1,10 +1,9 @@
 package com.chattychat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import com.chattychat.IntegrationTests.AbstractPostgresIntegrationTest;
 
-@SpringBootTest
-class ChattyChatApplicationTests {
+class ChattyChatApplicationTests extends AbstractPostgresIntegrationTest {
 
     @Test
     void contextLoads() {

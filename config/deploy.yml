@@ -12,6 +12,9 @@ registry:
   password:
     - KAMAL_REGISTRY_PASSWORD
 
+  builder:
+    arch: amd64
+
 # Production Environment Variables injected by Kamal
 env:
   clear:

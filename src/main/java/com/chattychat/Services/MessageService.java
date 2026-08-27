@@ -53,12 +53,7 @@ public class MessageService {
     public List<OutboundMessageDTO> history(String roomName) {
         Optional<List<ChatMessage>> response = messageRepository.findByRoomNameOrderBySentAtAsc(roomName);
 
-        if (response.isEmpty()) {
-            return null;
-        }
-
-        return response
-                .get()
+        return response.map(chatMessages -> chatMessages
                 .stream()
                 .map(m -> {
                     User sender = m.getSender();
@@ -71,6 +66,7 @@ public class MessageService {
                             m.getSentAt()
                     );
                 })
-                .toList();
+                .toList()).orElse(null);
+
     }
 }

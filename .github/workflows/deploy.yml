@@ -1,37 +1,43 @@
-name: Deploy to VPS
+name: Deploy via Kamal
 
 on:
   push:
     branches: [ master ]
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby (for Kamal CLI)
+        uses: ruby/setup-ruby@v1
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          script_stop: true
-          script: |
-            set -ex
-            cd /home/guilherme/ChattyChat
-            
-            echo "Fetching latest changes..."
-            git fetch origin master
-            git reset --hard origin/master
-            
-            echo "Ensuring gradlew is executable..."
-            chmod +x gradlew
-            
-            echo "Building application..."
-            ./gradlew clean bootJar -x test
-            
-            echo "Restarting service..."
-            sudo systemctl restart chattychat.service
-            
-            echo "Deployment completed successfully!"
+          ruby-version: '3.3'
+
+      - name: Install Kamal
+        run: gem install kamal
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Deploy with Kamal
+        env:
+          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_USER: ${{ secrets.DB_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          kamal deploy

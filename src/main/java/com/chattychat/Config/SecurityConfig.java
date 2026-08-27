@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
                 .authorizeHttpRequests((authorize) -> authorize
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/v1/**").authenticated()
                         .requestMatchers("/ws/**").authenticated()
                         .anyRequest().permitAll()

@@ -1,0 +1,55 @@
+service: chattychat
+image: guijanson007/chattychat
+
+servers:
+  web:
+    hosts:
+      - 159.195.108.114
+
+ssh:
+  user: guilherme
+
+registry:
+  server: ghcr.io
+  username: guijanson007
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: amd64
+  cache:
+    type: registry
+    options: mode=max
+
+# Give Spring Boot enough time to start and point to a valid endpoint
+proxy:
+  ssl: true
+  host: chattychat.guilhermetests.com
+  app_port: 8080
+  healthcheck:
+    path: /actuator/health
+    interval: 5
+    timeout: 5
+
+env:
+  clear:
+    SPRING_PROFILES_ACTIVE: prod
+    SPRING_DATASOURCE_URL: jdbc:postgresql://chattychat-postgres:5432/chattychat_prod
+    SPRING_DOCKER_COMPOSE_ENABLED: "false"
+  secret:
+    - DB_USERNAME
+    - DB_PASSWORD
+
+accessories:
+  postgres:
+    image: postgres:16-alpine
+    host: 159.195.108.114
+    port: "127.0.0.1:5432:5432"
+    env:
+      clear:
+        POSTGRES_DB: chattychat_prod
+      secret:
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+    directories:
+      - postgres-data:/var/lib/postgresql/data

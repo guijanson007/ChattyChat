@@ -2,7 +2,7 @@ name: Deploy via Kamal
 
 on:
   push:
-    branches: [ master, kamal-deployment ]
+    branches: [ master ]
 
 permissions:
   contents: read
@@ -40,4 +40,4 @@ jobs:
           POSTGRES_USER: ${{ secrets.DB_USERNAME }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          kamal setup
+          kamal deploy

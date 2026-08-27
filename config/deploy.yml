@@ -28,8 +28,8 @@ proxy:
   app_port: 8080
   healthcheck:
     path: /actuator/health
-    interval: 5s
-    timeout: 5s
+    interval: 5
+    timeout: 5
 
 env:
   clear:

@@ -24,12 +24,14 @@ builder:
     options: mode=max
 
 # Give Spring Boot enough time to start and point to a valid endpoint
-healthcheck:
-  path: /actuator/health
-  port: 8080
-  max_attempts: 10
-  interval: 5s
-  timeout: 5s
+proxy:
+  ssl: true
+  host: chattychat.guilhermetests.com
+  app_port: 8080
+  healthcheck:
+    path: /actuator/health
+    interval: 5s
+    timeout: 5s
 
 env:
   clear:

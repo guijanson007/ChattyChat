@@ -36,4 +36,4 @@ jobs:
           POSTGRES_USER: ${{ secrets.DB_USERNAME }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          kamal deploy
+          kamal setup

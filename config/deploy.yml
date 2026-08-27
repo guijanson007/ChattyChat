@@ -39,6 +39,10 @@ env:
   secret:
     - DB_USERNAME
     - DB_PASSWORD
+    - GOOGLE_CLIENT_ID
+    - GOOGLE_CLIENT_SECRET
+    - GITHUB_CLIENT_ID
+    - GITHUB_CLIENT_SECRET
 
 accessories:
   postgres:

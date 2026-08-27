@@ -7,6 +7,9 @@ COPY gradlew .
 COPY gradle gradle
 COPY build.gradle settings.gradle ./
 
+# Ensure gradlew is executable inside the container
+RUN chmod +x gradlew
+
 # Download dependencies
 RUN ./gradlew dependencies --no-daemon || true
 

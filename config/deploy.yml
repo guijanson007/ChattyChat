@@ -1,10 +1,12 @@
-# config/deploy.yml
 service: chattychat
 image: guijanson007/chattychat
 
 servers:
   web:
-    - 159.195.108.114
+    hosts:
+      - 159.195.108.114
+    # Map traffic to your Spring Boot internal port
+    port: 8080
 
 ssh:
   user: guilherme
@@ -17,24 +19,32 @@ registry:
 
 builder:
   arch: amd64
+  cache:
+    type: registry
+    options: mode=max
 
-# Production Environment Variables injected by Kamal
+# Give Spring Boot enough time to start and point to a valid endpoint
+healthcheck:
+  path: /actuator/health
+  port: 8080
+  max_attempts: 10
+  interval: 5s
+  timeout: 5s
+
 env:
   clear:
     SPRING_PROFILES_ACTIVE: prod
-    # chattychat-postgres is the internal Docker hostname Kamal gives to the database accessory
     SPRING_DATASOURCE_URL: jdbc:postgresql://chattychat-postgres:5432/chattychat_prod
     SPRING_DOCKER_COMPOSE_ENABLED: "false"
   secret:
     - DB_USERNAME
     - DB_PASSWORD
 
-# PostgreSQL managed as a Kamal accessory on the VPS
 accessories:
   postgres:
     image: postgres:16-alpine
     host: 159.195.108.114
-    port: "127.0.0.1:5432:5432" # Bound locally so only internal network / SSH can reach it
+    port: "127.0.0.1:5432:5432"
     env:
       clear:
         POSTGRES_DB: chattychat_prod

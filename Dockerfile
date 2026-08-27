@@ -2,23 +2,21 @@
 FROM amazoncorretto:21-alpine AS builder
 WORKDIR /app
 
-# Copy gradle wrapper and definition files first
+# 1. Copy only the files needed to resolve dependencies
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle settings.gradle ./
 
 RUN chmod +x gradlew
 
-# Pre-fetch Gradle wrapper & dependencies using dedicated cache directories
-RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew dependencies --no-daemon || true
+# 2. Download dependencies into the standard Docker layer
+RUN ./gradlew dependencies --no-daemon || true
 
-# Copy source code
+# 3. Copy source code ONLY after dependencies are cached
 COPY src src
 
-# Build JAR leveraging Gradle cache
-RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew bootJar --no-daemon -x test
+# 4. Build the JAR
+RUN ./gradlew bootJar --no-daemon -x test
 
 # Stage 2: Minimal runtime image
 FROM amazoncorretto:21-alpine
